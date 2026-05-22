@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Shield, Server, RefreshCw, Cpu, Activity, Info, Globe, AlertCircle } from 'lucide-react';
+import { Fingerprint, Database, RotateCcw, ScanLine, Radio, Lightbulb, LockKeyhole, CircleAlert } from 'lucide-react';
 import { KYCDocument, ProcessingLog, VerificationStatus, AnalyticsMetrics, LogLevel } from '@/types/kyc';
 import { MOCK_DOCUMENTS, MOCK_METRICS, SIMULATION_LOGS } from '@/lib/constants';
 import {
@@ -537,17 +537,17 @@ export default function Home() {
   }, [mounted]);
 
   return (
-    <div className="flex-1 bg-[#030712] text-slate-100 flex flex-col min-h-screen">
+    <div className="flex-1 bg-[#0a0814] text-violet-50 flex flex-col min-h-screen">
       
       {/* Top Banner Header */}
-      <header className="border-b border-slate-800 bg-slate-950/40 backdrop-blur-md sticky top-0 z-50 px-4 lg:px-8 py-3.5 flex items-center justify-between">
+      <header className="border-b border-violet-900/40 bg-violet-950/30 backdrop-blur-md sticky top-0 z-50 px-4 lg:px-8 py-3.5 flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-400 border border-indigo-500/20">
-            <Shield className="w-5 h-5 animate-pulse" />
+          <div className="p-2 bg-violet-500/10 rounded-lg text-violet-400 border border-violet-500/25">
+            <Fingerprint className="w-5 h-5" />
           </div>
           <div>
             <h1 className="text-sm font-extrabold text-white tracking-wider uppercase flex items-center">
-              KYC SECURE <span className="ml-2 text-[9px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-1.5 py-0.5 rounded">V1.2</span>
+              KYC SECURE <span className="ml-2 text-[9px] bg-violet-500/20 text-violet-300 border border-violet-500/30 px-1.5 py-0.5 rounded">V1.2</span>
             </h1>
             <p className="text-[10px] text-slate-400 font-medium">Real-time Intelligent Document Auditing Platform</p>
           </div>
@@ -556,11 +556,11 @@ export default function Home() {
         {/* Global System Status Signals */}
         <div className="flex items-center space-x-6 text-xs text-slate-400">
           <div className="hidden sm:flex items-center space-x-2">
-            <Cpu className="w-3.5 h-3.5 text-slate-500" />
+            <ScanLine className="w-3.5 h-3.5 text-violet-500/70" />
             <span className="font-mono text-[10px]">OCR ENGINE: ACTIVE</span>
           </div>
           <div className="hidden sm:flex items-center space-x-2">
-            <Server className={`w-3.5 h-3.5 ${apiConnected ? 'text-emerald-400' : 'text-rose-400'}`} />
+            <Database className={`w-3.5 h-3.5 ${apiConnected ? 'text-emerald-400' : 'text-rose-400'}`} />
             <span className={`font-mono text-[10px] ${apiConnected ? 'text-emerald-400' : 'text-rose-400'}`}>
               API VERIFY: {apiConnected ? 'CONNECTED' : 'OFFLINE'}
             </span>
@@ -572,8 +572,8 @@ export default function Home() {
                 : 'bg-amber-500/5 border-amber-500/15'
             }`}
           >
-            <Activity
-              className={`w-3.5 h-3.5 animate-pulse ${apiConnected ? 'text-emerald-400' : 'text-amber-400'}`}
+            <Radio
+              className={`w-3.5 h-3.5 ${apiConnected ? 'text-emerald-400' : 'text-amber-400'}`}
             />
             <span
               className={`text-[10px] font-bold uppercase tracking-wider ${
@@ -601,11 +601,11 @@ export default function Home() {
             <button
               onClick={handleReset}
               disabled={status === 'idle'}
-              className={`px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white rounded-lg text-xs font-semibold flex items-center border border-slate-800 transition-all
+              className={`px-3 py-1.5 bg-violet-950/50 hover:bg-violet-900/40 text-violet-200 hover:text-white rounded-lg text-xs font-semibold flex items-center border border-violet-800/40 transition-all
                 ${status === 'idle' ? 'opacity-40 pointer-events-none' : ''}
               `}
             >
-              <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Clear / Reset
+              <RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Clear / Reset
             </button>
           </div>
         </div>
@@ -644,19 +644,19 @@ export default function Home() {
 
         {apiError && (
           <div className="mb-4 flex items-center gap-2 rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs text-rose-300">
-            <AlertCircle className="h-4 w-4 shrink-0" />
+            <CircleAlert className="h-4 w-4 shrink-0" />
             <span>{apiError}</span>
           </div>
         )}
 
         {/* Security Warning Footnote */}
-        <footer className="mt-8 border-t border-slate-900 pt-6 flex flex-col md:flex-row items-center justify-between text-[11px] text-slate-500 gap-4">
+        <footer className="mt-8 border-t border-violet-900/30 pt-6 flex flex-col md:flex-row items-center justify-between text-[11px] text-violet-300/50 gap-4">
           <div className="flex items-center space-x-1.5">
-            <Globe className="w-3.5 h-3.5 text-slate-600" />
+            <LockKeyhole className="w-3.5 h-3.5 text-violet-600/60" />
             <span>End-to-End Encrypted Tunnel active — ISO 27001 Certified SOC2 Compliant</span>
           </div>
-          <div className="flex items-center space-x-1.5 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-900">
-            <Info className="w-3.5 h-3.5 text-indigo-400" />
+          <div className="flex items-center space-x-1.5 bg-violet-950/40 px-3 py-1.5 rounded-lg border border-violet-800/30">
+            <Lightbulb className="w-3.5 h-3.5 text-violet-400" />
             <span>Click preset scenarios to test verification success, tampering detection, and document recency limits.</span>
           </div>
         </footer>

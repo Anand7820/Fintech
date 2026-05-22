@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { KYCDocument, BoundingBox } from '@/types/kyc';
 import { isFieldInRegion } from '@/lib/aadhaarRegions';
-import { ShieldCheck, ShieldAlert, ShieldX, Scan, Eye, Heart, BarChart3 } from 'lucide-react';
+import { BadgeCheck, ShieldAlert, ShieldX, FileSearch, Crosshair, UserCheck } from 'lucide-react';
 
 interface SplitScreenWorkflowProps {
   document: KYCDocument | null;
@@ -34,8 +34,8 @@ export const SplitScreenWorkflow: React.FC<SplitScreenWorkflowProps> = ({ docume
 
   if (!document) {
     return (
-      <div className="glass-panel rounded-xl p-8 flex flex-col items-center justify-center min-h-[450px] text-center border-dashed border-slate-800">
-        <Scan className="w-12 h-12 text-slate-600 mb-4 animate-pulse" />
+      <div className="glass-panel rounded-xl p-8 flex flex-col items-center justify-center min-h-[450px] text-center border-dashed border-violet-900/40">
+        <FileSearch className="w-12 h-12 text-violet-600/50 mb-4" />
         <h3 className="text-lg font-semibold text-slate-300">No Document Loaded</h3>
         <p className="text-xs text-slate-500 max-w-sm mt-2 leading-relaxed">
           Please drag & drop your verification document, upload a file, or select one of our interactive scenario presets above to see the split-screen workflow.
@@ -50,7 +50,7 @@ export const SplitScreenWorkflow: React.FC<SplitScreenWorkflowProps> = ({ docume
       case 'PASSED':
         return (
           <span className="flex items-center text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-semibold">
-            <ShieldCheck className="w-3.5 h-3.5 mr-1" />
+            <BadgeCheck className="w-3.5 h-3.5 mr-1" />
             PASSED
           </span>
         );
@@ -74,22 +74,22 @@ export const SplitScreenWorkflow: React.FC<SplitScreenWorkflowProps> = ({ docume
   };
 
   return (
-    <div className="glass-panel rounded-xl overflow-hidden flex flex-col lg:flex-row border border-slate-800 w-full mb-6">
+    <div className="glass-panel rounded-xl overflow-hidden flex flex-col lg:flex-row border border-violet-900/40 w-full mb-6">
       
       {/* LEFT PANEL: Document Image / Layout Canvas */}
-      <div className="flex-1 p-6 border-b lg:border-b-0 lg:border-r border-slate-800 bg-slate-950/20 relative flex flex-col items-center justify-center">
+      <div className="flex-1 p-6 border-b lg:border-b-0 lg:border-r border-violet-900/40 bg-violet-950/30/20 relative flex flex-col items-center justify-center">
         
         {/* Panel Header */}
         <div className="w-full flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-ping" />
+            <span className="w-2.5 h-2.5 rounded-full bg-violet-500 animate-ping" />
             <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Document Scan — Auto-Detected Regions</span>
           </div>
           <span className="text-[10px] text-slate-500 font-mono">ID: {document.id}</span>
         </div>
 
         {/* Document Frame — image-sized wrapper so region boxes align with the scan */}
-        <div className="flex justify-center items-center w-full min-h-[360px] max-h-[560px] bg-slate-950 rounded-lg border border-slate-800/80 shadow-2xl group overflow-hidden p-2">
+        <div className="flex justify-center items-center w-full min-h-[360px] max-h-[560px] bg-violet-950/30 rounded-lg border border-violet-900/40/80 shadow-2xl group overflow-hidden p-2">
           {document.previewUrl ? (
             <div
               className="relative mx-auto w-full"
@@ -109,8 +109,8 @@ export const SplitScreenWorkflow: React.FC<SplitScreenWorkflowProps> = ({ docume
               />
               {status === 'processing' && (
                 <div className="absolute inset-0 pointer-events-none z-30 rounded-sm overflow-hidden">
-                  <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-indigo-400 to-transparent shadow-[0_0_15px_rgba(99,102,241,0.8)] animate-scan" />
-                  <div className="absolute inset-0 bg-indigo-500/5" />
+                  <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-violet-400 to-transparent shadow-[0_0_15px_rgba(139,92,246,0.8)] animate-scan" />
+                  <div className="absolute inset-0 bg-violet-500/5" />
                 </div>
               )}
               {status !== 'processing' &&
@@ -130,20 +130,20 @@ export const SplitScreenWorkflow: React.FC<SplitScreenWorkflowProps> = ({ docume
                       }}
                       className={`absolute z-20 rounded-lg cursor-pointer transition-all duration-200
                         ${isFullDoc
-                          ? 'border border-dashed border-indigo-500/25 bg-indigo-500/[0.03] pointer-events-none'
+                          ? 'border border-dashed border-violet-500/25 bg-violet-500/[0.03] pointer-events-none'
                           : ''}
                         ${!isFullDoc && isHovered
-                          ? 'border-2 border-indigo-400 bg-indigo-500/25 shadow-[0_0_16px_rgba(99,102,241,0.5)]'
+                          ? 'border-2 border-violet-400 bg-violet-500/25 shadow-[0_0_16px_rgba(139,92,246,0.5)]'
                           : ''}
                         ${!isFullDoc && !isHovered
-                          ? 'border-2 border-indigo-400/50 bg-indigo-500/10 hover:border-indigo-400 hover:bg-indigo-500/20'
+                          ? 'border-2 border-violet-400/50 bg-violet-500/10 hover:border-violet-400 hover:bg-violet-500/20'
                           : ''}
                       `}
                     >
                       {!isFullDoc && (
                         <span
                           className={`absolute left-1 top-1 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wide
-                            ${isHovered ? 'bg-indigo-500 text-white' : 'bg-slate-950/80 text-indigo-300 border border-indigo-500/30'}
+                            ${isHovered ? 'bg-violet-500 text-white' : 'bg-violet-950/30/80 text-violet-300 border border-violet-500/30'}
                           `}
                         >
                           {box.label}
@@ -159,8 +159,8 @@ export const SplitScreenWorkflow: React.FC<SplitScreenWorkflowProps> = ({ docume
             >
               {status === 'processing' && (
                 <div className="absolute inset-0 pointer-events-none z-30">
-                  <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-indigo-400 to-transparent shadow-[0_0_15px_rgba(99,102,241,0.8)] animate-scan" />
-                  <div className="absolute inset-0 bg-indigo-500/5 backdrop-blur-[0.5px]" />
+                  <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-violet-400 to-transparent shadow-[0_0_15px_rgba(139,92,246,0.8)] animate-scan" />
+                  <div className="absolute inset-0 bg-violet-500/5 backdrop-blur-[0.5px]" />
                 </div>
               )}
 
@@ -279,13 +279,13 @@ export const SplitScreenWorkflow: React.FC<SplitScreenWorkflowProps> = ({ docume
                 }}
                 className={`absolute z-20 rounded-md border-2 cursor-pointer transition-all duration-200 flex items-center justify-center
                   ${isHovered 
-                    ? 'border-indigo-400 bg-indigo-500/20 shadow-[0_0_12px_rgba(99,102,241,0.6)] scale-[1.02]' 
-                    : 'border-indigo-500/30 bg-indigo-500/5 hover:border-indigo-400 hover:bg-indigo-500/10'}
+                    ? 'border-violet-400 bg-violet-500/20 shadow-[0_0_12px_rgba(139,92,246,0.6)] scale-[1.02]' 
+                    : 'border-violet-500/30 bg-violet-500/5 hover:border-violet-400 hover:bg-violet-500/10'}
                 `}
               >
                 {/* Tooltip on bounding box hover */}
                 {isHovered && (
-                  <div className="absolute bottom-full mb-1.5 px-2 py-1 bg-slate-950 text-slate-200 border border-indigo-500/30 rounded text-[9px] font-bold whitespace-nowrap shadow-xl z-50 pointer-events-none">
+                  <div className="absolute bottom-full mb-1.5 px-2 py-1 bg-violet-950/30 text-slate-200 border border-violet-500/30 rounded text-[9px] font-bold whitespace-nowrap shadow-xl z-50 pointer-events-none">
                     {box.label}
                   </div>
                 )}
@@ -299,7 +299,7 @@ export const SplitScreenWorkflow: React.FC<SplitScreenWorkflowProps> = ({ docume
         {/* Hover Highlight Tip */}
         <div className="w-full text-center mt-4">
           <p className="text-[10px] text-slate-400 flex items-center justify-center">
-            <Eye className="w-3.5 h-3.5 mr-1 text-indigo-400" />
+            <Crosshair className="w-3.5 h-3.5 mr-1 text-violet-400" />
             Hover over boxes on the document to trace their extracted data field counterpart.
           </p>
         </div>
@@ -309,7 +309,7 @@ export const SplitScreenWorkflow: React.FC<SplitScreenWorkflowProps> = ({ docume
       <div className="flex-1 p-6 flex flex-col h-full justify-between">
         
         {/* Toggle tabs for data vs security indicators */}
-        <div className="flex border-b border-slate-800 pb-3 mb-4 justify-between items-center">
+        <div className="flex border-b border-violet-900/40 pb-3 mb-4 justify-between items-center">
           <div className="flex space-x-4">
             <button
               onClick={() => setActiveTab('data')}
@@ -318,7 +318,7 @@ export const SplitScreenWorkflow: React.FC<SplitScreenWorkflowProps> = ({ docume
               `}
             >
               Extracted Data
-              {activeTab === 'data' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)]" />}
+              {activeTab === 'data' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-violet-500 shadow-[0_0_8px_rgba(139,92,246,0.8)]" />}
             </button>
             <button
               onClick={() => setActiveTab('security')}
@@ -327,14 +327,14 @@ export const SplitScreenWorkflow: React.FC<SplitScreenWorkflowProps> = ({ docume
               `}
             >
               Safety Audit
-              {activeTab === 'security' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)]" />}
+              {activeTab === 'security' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-violet-500 shadow-[0_0_8px_rgba(139,92,246,0.8)]" />}
             </button>
           </div>
 
           <div className="flex items-center space-x-1.5">
             <span className="text-[10px] text-slate-400 uppercase font-semibold">Status:</span>
             {status === 'processing' ? (
-              <span className="flex items-center text-[10px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2.5 py-0.5 rounded font-bold uppercase animate-pulse">
+              <span className="flex items-center text-[10px] bg-violet-500/10 text-violet-400 border border-violet-500/20 px-2.5 py-0.5 rounded font-bold uppercase animate-pulse">
                 Analyzing
               </span>
             ) : status === 'success' ? (
@@ -358,7 +358,7 @@ export const SplitScreenWorkflow: React.FC<SplitScreenWorkflowProps> = ({ docume
           <div className="flex-1 flex flex-col justify-between min-h-[300px]">
             {status === 'processing' ? (
               <div className="flex-1 flex flex-col items-center justify-center py-12">
-                <Scan className="w-10 h-10 text-indigo-400 animate-spin mb-4" />
+                <FileSearch className="w-10 h-10 text-violet-400 animate-pulse mb-4" />
                 <span className="text-xs text-slate-400">Performing optical character recognition...</span>
               </div>
             ) : (
@@ -377,8 +377,8 @@ export const SplitScreenWorkflow: React.FC<SplitScreenWorkflowProps> = ({ docume
                       onMouseLeave={() => setHoveredField(null)}
                       className={`p-3 rounded-lg border transition-all duration-200 relative overflow-hidden
                         ${isHovered 
-                          ? 'bg-indigo-950/20 border-indigo-500/50 shadow-[0_0_12px_rgba(99,102,241,0.08)]' 
-                          : 'bg-slate-900/20 border-slate-800/80 hover:border-slate-700'}
+                          ? 'bg-violet-950/20 border-violet-500/50 shadow-[0_0_12px_rgba(139,92,246,0.08)]' 
+                          : 'bg-slate-900/20 border-violet-900/40/80 hover:border-slate-700'}
                         ${!isRevealed ? 'opacity-20 translate-y-1' : 'opacity-100 translate-y-0'}
                       `}
                     >
@@ -405,7 +405,7 @@ export const SplitScreenWorkflow: React.FC<SplitScreenWorkflowProps> = ({ docume
                             `}>
                               {field.isMatch ? (
                                 <>
-                                  <ShieldCheck className="w-3 h-3 mr-0.5" /> Checked & Match
+                                  <BadgeCheck className="w-3 h-3 mr-0.5" /> Checked & Match
                                 </>
                               ) : (
                                 <>
@@ -429,7 +429,7 @@ export const SplitScreenWorkflow: React.FC<SplitScreenWorkflowProps> = ({ docume
           <div className="flex-1 flex flex-col justify-between min-h-[300px]">
             {status === 'processing' ? (
               <div className="flex-1 flex flex-col items-center justify-center py-12">
-                <ShieldCheck className="w-10 h-10 text-indigo-400 animate-pulse mb-4" />
+                <ShieldAlert className="w-10 h-10 text-violet-400 animate-pulse mb-4" />
                 <span className="text-xs text-slate-400">Analyzing security features, check signatures...</span>
               </div>
             ) : (
@@ -437,7 +437,7 @@ export const SplitScreenWorkflow: React.FC<SplitScreenWorkflowProps> = ({ docume
                 
                 {/* Face Biometrics Widget */}
                 {document.type !== 'utility_bill' && (
-                  <div className="p-4 rounded-xl bg-slate-900/30 border border-slate-800 flex items-center justify-between">
+                  <div className="p-4 rounded-xl bg-slate-900/30 border border-violet-900/40 flex items-center justify-between">
                     <div className="flex items-center space-x-3.5">
                       <div className="relative">
                         <div className="w-11 h-11 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden">
@@ -452,7 +452,7 @@ export const SplitScreenWorkflow: React.FC<SplitScreenWorkflowProps> = ({ docume
                           )}
                         </div>
                         <div className="absolute -bottom-1 -right-1 p-1 bg-emerald-500 rounded-full text-slate-950">
-                          <Heart className="w-3 h-3 fill-current" />
+                          <UserCheck className="w-3 h-3" />
                         </div>
                       </div>
                       <div>
@@ -472,7 +472,7 @@ export const SplitScreenWorkflow: React.FC<SplitScreenWorkflowProps> = ({ docume
                 {/* Grid list of indicators */}
                 <div className="space-y-3">
                   {document.safetyIndicators.map((indicator) => (
-                    <div key={indicator.id} className="p-3 rounded-lg bg-slate-900/20 border border-slate-800/80">
+                    <div key={indicator.id} className="p-3 rounded-lg bg-slate-900/20 border border-violet-900/40/80">
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-xs font-bold text-slate-200">
                           {indicator.name}

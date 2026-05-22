@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Upload, File, AlertCircle, CheckCircle, RefreshCcw, Sparkles } from 'lucide-react';
+import { CloudUpload, BookOpen, IdCard, Receipt, CircleAlert, CircleCheck, Loader2, RotateCcw, FlaskConical } from 'lucide-react';
 import { VerificationStatus } from '@/types/kyc';
 
 interface UploadDropzoneProps {
@@ -85,8 +85,8 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
           onDrop={handleDrop}
           onClick={status === 'idle' ? triggerFileInput : undefined}
           className={`h-full border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 relative group
-            ${isDragActive ? 'border-indigo-400 bg-indigo-500/10' : 'border-slate-700/50 hover:border-slate-500 hover:bg-slate-800/20'}
-            ${status === 'uploading' || status === 'processing' ? 'pointer-events-none border-indigo-500/20 bg-indigo-950/5' : ''}
+            ${isDragActive ? 'border-violet-400 bg-violet-500/10' : 'border-violet-800/40 hover:border-violet-600/40 hover:bg-violet-950/60/20'}
+            ${status === 'uploading' || status === 'processing' ? 'pointer-events-none border-violet-500/20 bg-violet-950/5' : ''}
             ${status === 'success' ? 'border-emerald-500/30 bg-emerald-950/5' : ''}
             ${status === 'failed' ? 'border-rose-500/30 bg-rose-950/5' : ''}
           `}
@@ -102,18 +102,18 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
           {/* Render States */}
           {status === 'idle' && (
             <div className="text-center flex flex-col items-center">
-              <div className="p-3 bg-indigo-500/10 rounded-full text-indigo-400 mb-3 border border-indigo-500/20 group-hover:scale-110 transition-transform duration-300">
-                <Upload className="w-6 h-6" />
+              <div className="p-3 bg-violet-500/10 rounded-full text-violet-400 mb-3 border border-violet-500/20 group-hover:scale-110 transition-transform duration-300">
+                <CloudUpload className="w-6 h-6" />
               </div>
               <p className="text-sm font-semibold text-slate-200">
-                Drag & drop document file, or <span className="text-indigo-400 group-hover:underline">browse</span>
+                Drag & drop document file, or <span className="text-violet-400 group-hover:underline">browse</span>
               </p>
               <p className="text-xs text-slate-400 mt-2">
                 Upload a photo of your physical Aadhaar/ID card (not a screenshot of this screen). JPG, PNG, PDF up to 10MB
               </p>
               {dragError && (
                 <div className="mt-3 flex items-center text-xs text-rose-400 bg-rose-500/10 px-3 py-1.5 rounded border border-rose-500/20">
-                  <AlertCircle className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
+                  <CircleAlert className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
                   <span>{dragError}</span>
                 </div>
               )}
@@ -122,17 +122,17 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
 
           {(status === 'uploading' || status === 'processing') && (
             <div className="w-full max-w-sm text-center flex flex-col items-center">
-              <div className="p-3 bg-indigo-500/10 rounded-full text-indigo-400 mb-3 border border-indigo-500/20 animate-spin">
-                <RefreshCcw className="w-6 h-6" />
+              <div className="p-3 bg-violet-500/10 rounded-full text-violet-400 mb-3 border border-violet-500/20">
+                <Loader2 className="w-6 h-6 animate-spin" />
               </div>
               <p className="text-sm font-semibold text-slate-200">
                 {status === 'uploading' ? 'Uploading Document...' : 'Extracting OCR & Running Verifications...'}
               </p>
               
               {/* Custom visual progress bar */}
-              <div className="w-full bg-slate-800 h-2.5 rounded-full mt-4 overflow-hidden border border-slate-700/50">
+              <div className="w-full bg-violet-950/60 h-2.5 rounded-full mt-4 overflow-hidden border border-violet-800/40">
                 <div
-                  className="bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 h-full rounded-full transition-all duration-300 relative shadow-[0_0_10px_rgba(99,102,241,0.5)]"
+                  className="bg-gradient-to-r from-violet-500 via-fuchsia-400 to-violet-500 h-full rounded-full transition-all duration-300 relative shadow-[0_0_10px_rgba(139,92,246,0.5)]"
                   style={{ width: `${progress}%` }}
                 >
                   <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,.15)_25%,transparent_25%,transparent_50%,rgba(255,255,255,.15)_50%,rgba(255,255,255,.15)_75%,transparent_75%,transparent)] bg-[size:1rem_1rem] animate-shimmer" />
@@ -140,7 +140,7 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
               </div>
               <div className="flex justify-between w-full mt-2 text-xs text-slate-400">
                 <span>{progress === 100 ? 'OCR analysis' : 'Uploading...'}</span>
-                <span className="font-semibold text-indigo-400">{progress}%</span>
+                <span className="font-semibold text-violet-400">{progress}%</span>
               </div>
             </div>
           )}
@@ -148,14 +148,14 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
           {status === 'success' && (
             <div className="text-center flex flex-col items-center">
               <div className="p-3 bg-emerald-500/10 rounded-full text-emerald-400 mb-3 border border-emerald-500/20 animate-bounce">
-                <CheckCircle className="w-6 h-6" />
+                <CircleCheck className="w-6 h-6" />
               </div>
               <p className="text-sm font-semibold text-slate-200">Document Verification Process Complete</p>
               <button
                 onClick={(e) => { e.stopPropagation(); onReset(); }}
-                className="mt-4 px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold flex items-center border border-slate-700 transition-colors"
+                className="mt-4 px-4 py-1.5 bg-violet-950/60 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold flex items-center border border-slate-700 transition-colors"
               >
-                <RefreshCcw className="w-3.5 h-3.5 mr-1" /> Reset Uploader
+                <RotateCcw className="w-3.5 h-3.5 mr-1" /> Reset Uploader
               </button>
             </div>
           )}
@@ -163,14 +163,14 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
           {status === 'failed' && (
             <div className="text-center flex flex-col items-center">
               <div className="p-3 bg-rose-500/10 rounded-full text-rose-400 mb-3 border border-rose-500/20">
-                <AlertCircle className="w-6 h-6" />
+                <CircleAlert className="w-6 h-6" />
               </div>
               <p className="text-sm font-semibold text-slate-200">Verification Failure Detected</p>
               <button
                 onClick={(e) => { e.stopPropagation(); onReset(); }}
-                className="mt-4 px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold flex items-center border border-slate-700 transition-colors"
+                className="mt-4 px-4 py-1.5 bg-violet-950/60 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold flex items-center border border-slate-700 transition-colors"
               >
-                <RefreshCcw className="w-3.5 h-3.5 mr-1" /> Retry Upload
+                <RotateCcw className="w-3.5 h-3.5 mr-1" /> Retry Upload
               </button>
             </div>
           )}
@@ -178,14 +178,14 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
           {status === 'warning' && (
             <div className="text-center flex flex-col items-center">
               <div className="p-3 bg-amber-500/10 rounded-full text-amber-400 mb-3 border border-amber-500/20">
-                <AlertCircle className="w-6 h-6" />
+                <CircleAlert className="w-6 h-6" />
               </div>
               <p className="text-sm font-semibold text-slate-200">Tampering / Warning Detected</p>
               <button
                 onClick={(e) => { e.stopPropagation(); onReset(); }}
-                className="mt-4 px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold flex items-center border border-slate-700 transition-colors"
+                className="mt-4 px-4 py-1.5 bg-violet-950/60 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold flex items-center border border-slate-700 transition-colors"
               >
-                <RefreshCcw className="w-3.5 h-3.5 mr-1" /> Reset Uploader
+                <RotateCcw className="w-3.5 h-3.5 mr-1" /> Reset Uploader
               </button>
             </div>
           )}
@@ -196,7 +196,7 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
       <div className="w-full md:w-80 glass-panel rounded-xl p-5 flex flex-col justify-between">
         <div>
           <div className="flex items-center space-x-1.5 mb-3 text-slate-200 font-semibold text-xs uppercase tracking-wider">
-            <Sparkles className="w-4 h-4 text-indigo-400 animate-pulse" />
+            <FlaskConical className="w-4 h-4 text-violet-400" />
             <span>Interactive Test Scenarios</span>
           </div>
           <p className="text-xs text-slate-400 leading-relaxed mb-4">
@@ -211,14 +211,14 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
             disabled={status !== 'idle' && selectedDocId !== 'doc-passport-001'}
             className={`w-full text-left p-3 rounded-lg border transition-all duration-300 flex items-center justify-between group
               ${selectedDocId === 'doc-passport-001' 
-                ? 'bg-indigo-950/40 border-indigo-500/50 shadow-[0_0_15px_rgba(99,102,241,0.15)]' 
-                : 'bg-slate-900/40 border-slate-800 hover:border-slate-600 hover:bg-slate-800/40'}
+                ? 'bg-violet-950/40 border-violet-500/50 shadow-[0_0_15px_rgba(139,92,246,0.15)]' 
+                : 'bg-slate-900/40 border-slate-800 hover:border-slate-600 hover:bg-violet-950/60/40'}
               ${status !== 'idle' && selectedDocId !== 'doc-passport-001' ? 'opacity-40 pointer-events-none' : ''}
             `}
           >
             <div className="flex items-center space-x-3">
-              <div className={`p-2 rounded-md ${selectedDocId === 'doc-passport-001' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800 text-slate-400 group-hover:text-slate-200'}`}>
-                <File className="w-4 h-4" />
+              <div className={`p-2 rounded-md ${selectedDocId === 'doc-passport-001' ? 'bg-violet-500/20 text-violet-400' : 'bg-violet-950/60 text-slate-400 group-hover:text-slate-200'}`}>
+                <BookOpen className="w-4 h-4" />
               </div>
               <div>
                 <div className="text-xs font-bold text-slate-200">US Passport</div>
@@ -236,14 +236,14 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
             disabled={status !== 'idle' && selectedDocId !== 'doc-license-002'}
             className={`w-full text-left p-3 rounded-lg border transition-all duration-300 flex items-center justify-between group
               ${selectedDocId === 'doc-license-002' 
-                ? 'bg-indigo-950/40 border-indigo-500/50 shadow-[0_0_15px_rgba(99,102,241,0.15)]' 
-                : 'bg-slate-900/40 border-slate-800 hover:border-slate-600 hover:bg-slate-800/40'}
+                ? 'bg-violet-950/40 border-violet-500/50 shadow-[0_0_15px_rgba(139,92,246,0.15)]' 
+                : 'bg-slate-900/40 border-slate-800 hover:border-slate-600 hover:bg-violet-950/60/40'}
               ${status !== 'idle' && selectedDocId !== 'doc-license-002' ? 'opacity-40 pointer-events-none' : ''}
             `}
           >
             <div className="flex items-center space-x-3">
-              <div className={`p-2 rounded-md ${selectedDocId === 'doc-license-002' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800 text-slate-400 group-hover:text-slate-200'}`}>
-                <File className="w-4 h-4" />
+              <div className={`p-2 rounded-md ${selectedDocId === 'doc-license-002' ? 'bg-violet-500/20 text-violet-400' : 'bg-violet-950/60 text-slate-400 group-hover:text-slate-200'}`}>
+                <IdCard className="w-4 h-4" />
               </div>
               <div>
                 <div className="text-xs font-bold text-slate-200">Driver's License</div>
@@ -261,14 +261,14 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
             disabled={status !== 'idle' && selectedDocId !== 'doc-bill-003'}
             className={`w-full text-left p-3 rounded-lg border transition-all duration-300 flex items-center justify-between group
               ${selectedDocId === 'doc-bill-003' 
-                ? 'bg-indigo-950/40 border-indigo-500/50 shadow-[0_0_15px_rgba(99,102,241,0.15)]' 
-                : 'bg-slate-900/40 border-slate-800 hover:border-slate-600 hover:bg-slate-800/40'}
+                ? 'bg-violet-950/40 border-violet-500/50 shadow-[0_0_15px_rgba(139,92,246,0.15)]' 
+                : 'bg-slate-900/40 border-slate-800 hover:border-slate-600 hover:bg-violet-950/60/40'}
               ${status !== 'idle' && selectedDocId !== 'doc-bill-003' ? 'opacity-40 pointer-events-none' : ''}
             `}
           >
             <div className="flex items-center space-x-3">
-              <div className={`p-2 rounded-md ${selectedDocId === 'doc-bill-003' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800 text-slate-400 group-hover:text-slate-200'}`}>
-                <File className="w-4 h-4" />
+              <div className={`p-2 rounded-md ${selectedDocId === 'doc-bill-003' ? 'bg-violet-500/20 text-violet-400' : 'bg-violet-950/60 text-slate-400 group-hover:text-slate-200'}`}>
+                <Receipt className="w-4 h-4" />
               </div>
               <div>
                 <div className="text-xs font-bold text-slate-200">Utility Bill</div>

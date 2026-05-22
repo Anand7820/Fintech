@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { ProcessingLog, VerificationStatus } from '@/types/kyc';
-import { Terminal, Shield, Play, Pause, FastForward } from 'lucide-react';
+import { ScrollText, Lock, Play, Pause, FastForward, Check, AlertTriangle, X, Loader2 } from 'lucide-react';
 
 interface LogsTimelineProps {
   logs: ProcessingLog[];
@@ -85,23 +85,23 @@ export const LogsTimeline: React.FC<LogsTimelineProps> = ({
   const getStageIndicator = (stageName: string, label: string) => {
     const stageStatus = getStageStatus(stageName);
     
-    let ringColor = 'border-slate-800 bg-slate-900 text-slate-600';
+    let ringColor = 'border-violet-900/40 bg-slate-900 text-slate-600';
     let pulseColor = '';
-    let icon = <span>•</span>;
+    let icon = <span className="w-1 h-1 rounded-full bg-slate-600" />;
 
     if (stageStatus === 'running') {
-      ringColor = 'border-indigo-500 bg-indigo-950/40 text-indigo-400';
-      pulseColor = 'animate-ping border-indigo-500';
-      icon = <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />;
+      ringColor = 'border-violet-500 bg-violet-950/40 text-violet-400';
+      pulseColor = 'animate-ping border-violet-500';
+      icon = <Loader2 className="w-3 h-3 animate-spin" />;
     } else if (stageStatus === 'success') {
       ringColor = 'border-emerald-500 bg-emerald-950/30 text-emerald-400';
-      icon = <span className="text-[9px] font-bold">✓</span>;
+      icon = <Check className="w-3 h-3" strokeWidth={3} />;
     } else if (stageStatus === 'warning') {
       ringColor = 'border-amber-500 bg-amber-950/30 text-amber-400';
-      icon = <span className="text-[9px] font-bold">!</span>;
+      icon = <AlertTriangle className="w-3 h-3" />;
     } else if (stageStatus === 'failed') {
       ringColor = 'border-rose-500 bg-rose-950/30 text-rose-400';
-      icon = <span className="text-[9px] font-bold">✗</span>;
+      icon = <X className="w-3 h-3" strokeWidth={3} />;
     }
 
     return (
@@ -116,7 +116,7 @@ export const LogsTimeline: React.FC<LogsTimelineProps> = ({
         </div>
         <div>
           <span className={`text-xs font-bold transition-colors duration-300 block
-            ${stageStatus === 'running' ? 'text-indigo-400 glow-text-indigo' : ''}
+            ${stageStatus === 'running' ? 'text-violet-400 glow-text-accent' : ''}
             ${stageStatus === 'success' ? 'text-slate-200' : ''}
             ${stageStatus === 'idle' ? 'text-slate-500' : ''}
             ${stageStatus === 'warning' ? 'text-amber-400 font-semibold' : ''}
@@ -141,9 +141,9 @@ export const LogsTimeline: React.FC<LogsTimelineProps> = ({
       
       {/* 1. Visual Verification Pipeline */}
       <div className="glass-panel rounded-xl p-5 relative overflow-hidden flex-1">
-        <div className="flex items-center justify-between mb-5 border-b border-slate-800 pb-3">
+        <div className="flex items-center justify-between mb-5 border-b border-violet-900/40 pb-3">
           <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">Verification Stages</span>
-          <Shield className="w-4 h-4 text-indigo-400" />
+          <Lock className="w-4 h-4 text-violet-400" />
         </div>
 
         {/* Pipeline connecting vertical line */}
@@ -160,9 +160,9 @@ export const LogsTimeline: React.FC<LogsTimelineProps> = ({
 
       {/* 2. Developer Monospace Terminal Ticker */}
       <div className="glass-panel rounded-xl p-5 flex flex-col h-72">
-        <div className="flex items-center justify-between mb-3.5 border-b border-slate-800 pb-2.5">
+        <div className="flex items-center justify-between mb-3.5 border-b border-violet-900/40 pb-2.5">
           <div className="flex items-center space-x-2">
-            <Terminal className="w-4 h-4 text-emerald-400" />
+            <ScrollText className="w-4 h-4 text-fuchsia-400" />
             <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Live Logging Stream</span>
           </div>
           
@@ -182,7 +182,7 @@ export const LogsTimeline: React.FC<LogsTimelineProps> = ({
                 onClick={() => onSpeedChange(speed === 1 ? 2.5 : speed === 2.5 ? 5 : 1)}
                 title="Simulation Speed"
                 className={`px-1.5 py-0.5 bg-slate-800 hover:bg-slate-700 text-[9px] rounded font-bold transition-all flex items-center
-                  ${speed > 1 ? 'text-indigo-400 border border-indigo-500/30' : 'text-slate-400'}
+                  ${speed > 1 ? 'text-violet-400 border border-violet-500/30' : 'text-slate-400'}
                 `}
               >
                 <FastForward className="w-2.5 h-2.5 mr-0.5" /> {speed}x
@@ -192,7 +192,7 @@ export const LogsTimeline: React.FC<LogsTimelineProps> = ({
         </div>
 
         {/* Monospace Output */}
-        <div className="flex-1 bg-slate-950/80 border border-slate-900 rounded-lg p-3 font-mono text-[10px] text-slate-300 overflow-y-auto leading-relaxed shadow-inner">
+        <div className="flex-1 bg-violet-950/50 border border-slate-900 rounded-lg p-3 font-mono text-[10px] text-slate-300 overflow-y-auto leading-relaxed shadow-inner">
           {logs.length === 0 ? (
             <div className="h-full flex items-center justify-center text-slate-600">
               <span>Waiting for document stream ingestion...</span>
