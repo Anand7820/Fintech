@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+@theme {
+  --animate-scan: scan 3s linear infinite;
+  --animate-pulse-glow: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-shimmer: shimmer 2s linear infinite;
+  --animate-glow: glow 4s ease infinite;
+
+  @keyframes scan {
+    0% {
+      top: 0%;
+      opacity: 0.1;
+    }
+    10% {
+      opacity: 0.8;
+    }
+    90% {
+      opacity: 0.8;
+    }
+    100% {
+      top: 100%;
+      opacity: 0.1;
+    }
+  }
+  @keyframes pulse-glow {
+    0%, 100% {
+      opacity: 0.6;
+      box-shadow: 0 0 12px rgba(244, 63, 94, 0.3);
+    }
+    50% {
+      opacity: 1;
+      box-shadow: 0 0 24px rgba(244, 63, 94, 0.7);
+    }
+  }
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+  @keyframes glow {
+    0%, 100% {
+      border-color: rgba(99, 102, 241, 0.15);
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+    }
+    50% {
+      border-color: rgba(139, 92, 246, 0.4);
+      box-shadow: 0 4px 30px rgba(139, 92, 246, 0.1);
+    }
+  }
+}
+
+:root {
+  --background: #030712;
+  --foreground: #f9fafb;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  overflow-x: hidden;
+  font-family: var(--font-geist-sans), sans-serif;
+}
+
+/* Glassmorphism layouts */
+.glass-panel {
+  background: rgba(17, 24, 39, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-panel-hover:hover {
+  background: rgba(17, 24, 39, 0.75);
+  border-color: rgba(99, 102, 241, 0.3);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(99, 102, 241, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Hide default browser focus outline, custom glows for interactive states */
+.custom-focus:focus-visible {
+  outline: 2px solid rgba(99, 102, 241, 0.6);
+  outline-offset: 2px;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(3, 7, 18, 0.5);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.25);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.5);
+}
+
+/* Glowing text */
+.glow-text-indigo {
+  text-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
+}
+.glow-text-emerald {
+  text-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+}
+.glow-text-rose {
+  text-shadow: 0 0 10px rgba(244, 63, 94, 0.4);
+}
+.glow-text-amber {
+  text-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+}
