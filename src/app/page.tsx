@@ -7,7 +7,6 @@ import { MOCK_DOCUMENTS, MOCK_METRICS, SIMULATION_LOGS } from '@/lib/constants';
 import {
   checkApiHealth,
   fetchDashboardMetrics,
-  validateIdentity,
   verifyDocument,
   type DetectedRegionApi,
 } from '@/lib/api';
@@ -203,6 +202,33 @@ export default function Home() {
     return 'warning';
   };
 
+  const fieldMatchLookup = (fieldMatches: import('@/lib/api').FieldMatchApi[] | undefined) => {
+    const map: Record<string, boolean> = {};
+    if (!fieldMatches?.length) return map;
+    for (const item of fieldMatches) {
+      map[item.field] = item.match;
+    }
+    return map;
+  };
+
+  const resolveVerificationStatus = (
+    apiStatus: string,
+    extractedFields: KYCDocument['extractedFields'],
+    identityVerified: boolean
+  ): VerificationStatus => {
+    const checked = extractedFields.filter((f) => f.isMatch !== undefined);
+    if (checked.length > 0) {
+      const failed = checked.filter((f) => f.isMatch === false);
+      if (failed.length > 0) {
+        return failed.length === checked.length ? 'failed' : 'warning';
+      }
+    }
+    if (!identityVerified) {
+      return apiStatus === 'flagged' ? 'failed' : 'warning';
+    }
+    return mapApiStatus(apiStatus);
+  };
+
   const mapDetectedRegions = (regions: DetectedRegionApi[] | undefined): BoundingBox[] => {
     if (!regions?.length) return [];
     return regions.map((r) => ({
@@ -222,21 +248,29 @@ export default function Home() {
     dob: string | null | undefined,
     docId: string | null | undefined,
     nationality: string | null | undefined,
-    confidence: number
+    confidence: number,
+    matchMap: Record<string, boolean>
   ) => {
     const fields: KYCDocument['extractedFields'] = [];
     const displayName = name || [givenNames, surname].filter(Boolean).join(' ');
+    const nameOk = matchMap.name ?? false;
     if (displayName) {
-      fields.push({ key: 'name', label: 'Full Name', value: displayName, confidence, isMatch: true });
+      fields.push({ key: 'name', label: 'Full Name', value: displayName, confidence, isMatch: nameOk });
     }
     if (surname) {
-      fields.push({ key: 'surname', label: 'Surname', value: surname, confidence, isMatch: true });
+      fields.push({ key: 'surname', label: 'Surname', value: surname, confidence, isMatch: nameOk });
     }
     if (givenNames) {
-      fields.push({ key: 'given_names', label: 'Given Names', value: givenNames, confidence, isMatch: true });
+      fields.push({ key: 'given_names', label: 'Given Names', value: givenNames, confidence, isMatch: nameOk });
     }
     if (dob) {
-      fields.push({ key: 'dob', label: 'Date of Birth', value: dob, confidence, isMatch: true });
+      fields.push({
+        key: 'dob',
+        label: 'Date of Birth',
+        value: dob,
+        confidence,
+        isMatch: matchMap.date_of_birth ?? false,
+      });
     }
     if (nationality) {
       fields.push({
@@ -244,7 +278,7 @@ export default function Home() {
         label: 'Nationality',
         value: nationality,
         confidence,
-        isMatch: true,
+        isMatch: nameOk,
       });
     }
     if (docId) {
@@ -253,10 +287,10 @@ export default function Home() {
         label: 'Passport Number',
         value: docId,
         confidence,
-        isMatch: true,
+        isMatch: matchMap.document_id ?? false,
       });
     }
-    fields.push({ key: 'doc_type', label: 'Document Type', value: 'PASSPORT (P)', confidence: 99, isMatch: true });
+    fields.push({ key: 'doc_type', label: 'Document Type', value: 'PASSPORT (P)', confidence: 99 });
     return fields;
   };
 
@@ -266,24 +300,27 @@ export default function Home() {
     dob: string | null | undefined,
     docId: string | null | undefined,
     confidence: number,
-    registryMatch: boolean
+    matchMap: Record<string, boolean>,
+    checksumValid: boolean
   ) => {
     const fields: KYCDocument['extractedFields'] = [];
-    const matched = registryMatch;
+    const nameOk = matchMap.name ?? false;
+    const dobOk = matchMap.date_of_birth ?? false;
+    const uidOk = (matchMap.document_id ?? false) || checksumValid;
     if (name) {
       const parts = name.trim().split(/\s+/);
       const surname = parts.length > 1 ? parts[parts.length - 1] : parts[0];
       const given = parts.length > 1 ? parts.slice(0, -1).join(' ') : '';
-      fields.push({ key: 'name', label: 'Full Name', value: name, confidence, isMatch: matched });
+      fields.push({ key: 'name', label: 'Full Name', value: name, confidence, isMatch: nameOk });
       if (given) {
-        fields.push({ key: 'given_names', label: 'Given Names', value: given, confidence, isMatch: matched });
+        fields.push({ key: 'given_names', label: 'Given Names', value: given, confidence, isMatch: nameOk });
       }
-      fields.push({ key: 'surname', label: 'Surname', value: surname, confidence, isMatch: matched });
+      fields.push({ key: 'surname', label: 'Surname', value: surname, confidence, isMatch: nameOk });
     }
     if (dob) {
-      fields.push({ key: 'dob', label: 'Date of Birth', value: dob, confidence, isMatch: matched });
+      fields.push({ key: 'dob', label: 'Date of Birth', value: dob, confidence, isMatch: dobOk });
     }
-    fields.push({ key: 'gender', label: 'Gender', value: 'Male', confidence, isMatch: matched });
+    fields.push({ key: 'gender', label: 'Gender', value: 'Male', confidence, isMatch: nameOk && dobOk });
     if (docId) {
       const formatted = docId.replace(/\D/g, '').replace(/(\d{4})(?=\d)/g, '$1 ').trim();
       fields.push({
@@ -291,7 +328,7 @@ export default function Home() {
         label: 'Aadhaar Number',
         value: formatted,
         confidence,
-        isMatch: matched,
+        isMatch: uidOk,
       });
     }
     return fields;
@@ -323,23 +360,22 @@ export default function Home() {
       setUploadProgress(85);
       setStatus('processing');
 
+      const identityVerified = result.identity_verified ?? false;
+      const matchMap = fieldMatchLookup(result.field_matches);
       let identityMessage = 'Identity registry check skipped (no document ID extracted).';
-      let identityVerified = false;
       if (result.ocr.fields.document_id) {
-        try {
-          const identity = await validateIdentity({
-            document_id: result.ocr.fields.document_id,
-            name: result.ocr.fields.name,
-            date_of_birth: result.ocr.fields.date_of_birth,
-          });
-          identityMessage = identity.message;
-          identityVerified = identity.identity_verified;
-        } catch {
-          identityMessage = 'Identity registry lookup failed or record not found.';
+        if (identityVerified) {
+          identityMessage = 'Identity verified against core registry.';
+        } else if (result.field_matches?.length) {
+          const failed = result.field_matches.filter((f) => !f.match).map((f) => f.field);
+          identityMessage =
+            failed.length > 0
+              ? `Registry mismatch on: ${failed.join(', ')}. Overall verification not passed.`
+              : 'Identity could not be verified against registry.';
+        } else {
+          identityMessage = 'Document ID not found in identity registry.';
         }
       }
-
-      const finalStatus = mapApiStatus(result.status);
       const ocrConfidence = result.ocr.ocr_confidence;
       const forgeryScore = result.forgery.forgery_score;
       const structuralOk = result.forgery.layout.structural_integrity;
@@ -361,7 +397,8 @@ export default function Home() {
             result.ocr.fields.date_of_birth,
             result.ocr.fields.document_id,
             ocrConfidence,
-            identityVerified
+            matchMap,
+            Boolean(result.aadhaar_checksum_valid)
           )
         : isPassport
           ? buildPassportFields(
@@ -371,7 +408,8 @@ export default function Home() {
               result.ocr.fields.date_of_birth,
               result.ocr.fields.document_id,
               result.ocr.fields.nationality,
-              ocrConfidence
+              ocrConfidence,
+              matchMap
             )
           : [
               ...(result.ocr.fields.name
@@ -384,6 +422,12 @@ export default function Home() {
                 ? [{ key: 'doc_number', label: 'Document ID', value: result.ocr.fields.document_id, confidence: ocrConfidence }]
                 : []),
             ];
+
+      const finalStatus = resolveVerificationStatus(
+        result.status,
+        extractedFields,
+        identityVerified
+      );
 
       const customDoc: KYCDocument = {
         id: result.verification_id,
@@ -461,9 +505,25 @@ export default function Home() {
               ? `Passport verdict: ${result.status.toUpperCase()}. Passport No: ${result.ocr.fields.document_id ?? 'not read'}.`
               : `API verdict: ${result.status.toUpperCase()} (${result.processing_time_ms}ms)`,
           timestamp: formatLogTimestamp(),
-          level: finalStatus === 'success' ? 'success' : finalStatus === 'warning' ? 'warning' : 'error',
+          level:
+            finalStatus === 'success'
+              ? 'success'
+              : finalStatus === 'warning'
+                ? 'warning'
+                : 'error',
         },
       ];
+
+      if (finalStatus !== 'success') {
+        apiLogs.push({
+          id: 'log-api-6',
+          stage: 'final',
+          message:
+            'Overall status downgraded: one or more field checks failed. PASSED only when all critical fields match.',
+          timestamp: formatLogTimestamp(),
+          level: 'warning',
+        });
+      }
 
       setUploadProgress(100);
       setActiveScenarioId(customDoc.id);

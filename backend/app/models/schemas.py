@@ -69,6 +69,8 @@ class VerifyDocumentResponse(BaseModel):
     status: Literal["verified", "flagged", "pending_review"]
     document_type: str = "unknown"
     aadhaar_checksum_valid: bool | None = None
+    identity_verified: bool = False
+    field_matches: list[FieldMatchDetail] = Field(default_factory=list)
     preprocessing: PreprocessingSummary
     ocr: OCRResult
     forgery: ForgeryAnalysis

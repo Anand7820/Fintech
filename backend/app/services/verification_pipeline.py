@@ -8,8 +8,10 @@ import uuid
 
 from app.core.config import get_settings
 from app.core.exceptions import InvalidDocumentError, ScreenshotUploadError
+from app.models.schemas import FieldMatchDetail, IdentityValidationRequest
 from app.registry.mock_registry import lookup_identity
-from app.services.aadhaar_ocr import name_similarity
+from app.services.aadhaar_ocr import is_plausible_person_name, name_similarity
+from app.services.identity_validator import validate_identity
 from app.services.field_detection import detect_field_regions
 from app.core.metrics_store import metrics_store
 from app.models.schemas import OCRResult, VerifyDocumentResponse
@@ -31,35 +33,39 @@ def _determine_status(
     aadhaar_checksum_valid: bool | None,
     has_document_id: bool,
     has_name: bool,
+    identity_verified: bool,
+    name_plausible: bool,
 ) -> str:
     settings = get_settings()
 
+    if is_suspected_fake and forgery_score >= settings.forgery_alert_threshold:
+        return "flagged"
+
     if document_type == "aadhaar":
-        if is_suspected_fake and forgery_score >= 0.75:
+        if not aadhaar_checksum_valid and not has_document_id:
             return "flagged"
-        if aadhaar_checksum_valid and has_document_id:
-            if has_name and ocr_confidence >= 40.0 and forgery_score < settings.forgery_alert_threshold:
-                return "verified"
-            # Valid Aadhaar number but poor photo OCR — manual review, not "fake"
-            return "pending_review"
+        if identity_verified and forgery_score < settings.forgery_alert_threshold:
+            return "verified"
+        if aadhaar_checksum_valid and name_plausible and identity_verified:
+            return "verified"
         if has_document_id or has_name:
             return "pending_review"
         return "flagged"
 
     if document_type == "passport":
-        if is_suspected_fake and forgery_score >= 0.78:
-            return "flagged"
-        if has_document_id and has_name and ocr_confidence >= 42.0:
-            if forgery_score < settings.forgery_alert_threshold:
-                return "verified"
+        if identity_verified and has_document_id and forgery_score < settings.forgery_alert_threshold:
+            return "verified"
+        if has_document_id and has_name and name_plausible and ocr_confidence >= 42.0:
             return "pending_review"
         if has_document_id or has_name:
             return "pending_review"
         return "flagged"
 
-    if is_suspected_fake or forgery_score >= settings.forgery_alert_threshold:
-        return "flagged"
+    if identity_verified and forgery_score < settings.forgery_alert_threshold:
+        return "verified"
     if not structural_integrity or ocr_confidence < 50.0:
+        return "pending_review"
+    if not identity_verified:
         return "pending_review"
     return "verified"
 
@@ -138,6 +144,70 @@ def _run_pipeline_sync(
         image_bgr, settings, fields, document_type
     )
 
+    identity_verified = False
+    field_matches: list[FieldMatchDetail] = []
+    if fields.document_id:
+        identity_result = validate_identity(
+            IdentityValidationRequest(
+                document_id=fields.document_id,
+                name=fields.name,
+                date_of_birth=fields.date_of_birth,
+            ),
+            raise_if_missing=False,
+        )
+        identity_verified = identity_result.identity_verified
+        field_matches = list(identity_result.field_matches)
+
+    if document_type == "aadhaar":
+        present = {f.field for f in field_matches}
+        updated: list[FieldMatchDetail] = []
+        for f in field_matches:
+            if f.field == "document_id":
+                updated.append(
+                    FieldMatchDetail(
+                        field="document_id",
+                        extracted_value=f.extracted_value,
+                        registry_value=f.registry_value,
+                        match=f.match and bool(aadhaar_checksum_valid),
+                        confidence=f.confidence,
+                    )
+                )
+            else:
+                updated.append(f)
+        field_matches = updated
+        if "document_id" not in present and fields.document_id:
+            field_matches.append(
+                FieldMatchDetail(
+                    field="document_id",
+                    extracted_value=fields.document_id,
+                    registry_value=None,
+                    match=bool(aadhaar_checksum_valid),
+                    confidence=100.0 if aadhaar_checksum_valid else 0.0,
+                )
+            )
+        if "name" not in present:
+            field_matches.append(
+                FieldMatchDetail(
+                    field="name",
+                    extracted_value=fields.name,
+                    registry_value=None,
+                    match=identity_verified and is_plausible_person_name(fields.name),
+                    confidence=75.0 if is_plausible_person_name(fields.name) else 15.0,
+                )
+            )
+        if "date_of_birth" not in present and fields.date_of_birth:
+            field_matches.append(
+                FieldMatchDetail(
+                    field="date_of_birth",
+                    extracted_value=fields.date_of_birth,
+                    registry_value=None,
+                    match=identity_verified,
+                    confidence=70.0 if identity_verified else 20.0,
+                )
+            )
+
+    name_plausible = is_plausible_person_name(fields.name)
+
     status = _determine_status(
         document_type=document_type,
         forgery_score=forgery.forgery_score,
@@ -147,6 +217,8 @@ def _run_pipeline_sync(
         aadhaar_checksum_valid=aadhaar_checksum_valid,
         has_document_id=bool(fields.document_id),
         has_name=bool(fields.name),
+        identity_verified=identity_verified,
+        name_plausible=name_plausible,
     )
 
     metrics_store.record_verification(
@@ -159,6 +231,8 @@ def _run_pipeline_sync(
         status=status,
         document_type=document_type,
         aadhaar_checksum_valid=aadhaar_checksum_valid,
+        identity_verified=identity_verified,
+        field_matches=field_matches,
         preprocessing=preprocessing,
         ocr=ocr,
         forgery=forgery,

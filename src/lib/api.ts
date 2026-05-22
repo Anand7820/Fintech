@@ -7,6 +7,14 @@ export type ApiHealth = {
   version: string;
 };
 
+export type FieldMatchApi = {
+  field: string;
+  extracted_value: string | null;
+  registry_value: string | null;
+  match: boolean;
+  confidence: number;
+};
+
 export type DetectedRegionApi = {
   field_key: string;
   label: string;
@@ -22,6 +30,8 @@ export type VerifyDocumentApiResponse = {
   status: 'verified' | 'flagged' | 'pending_review';
   document_type?: string;
   aadhaar_checksum_valid?: boolean | null;
+  identity_verified?: boolean;
+  field_matches?: FieldMatchApi[];
   detected_regions?: DetectedRegionApi[];
   preprocessing?: {
     output_width: number;

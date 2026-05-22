@@ -40,11 +40,31 @@ def _similarity(a: str, b: str) -> float:
     return round(overlap * 100.0, 2)
 
 
-def validate_identity(request: IdentityValidationRequest) -> IdentityValidationResponse:
+def validate_identity(
+    request: IdentityValidationRequest,
+    *,
+    raise_if_missing: bool = True,
+) -> IdentityValidationResponse:
     record = lookup_identity(request.document_id)
     if record is None:
-        raise IdentityNotFoundError(
-            f"No registry entry for document_id '{request.document_id}'."
+        if raise_if_missing:
+            raise IdentityNotFoundError(
+                f"No registry entry for document_id '{request.document_id}'."
+            )
+        return IdentityValidationResponse(
+            document_id=request.document_id,
+            identity_verified=False,
+            registry_match_score=0.0,
+            field_matches=[
+                FieldMatchDetail(
+                    field="document_id",
+                    extracted_value=request.document_id,
+                    registry_value=None,
+                    match=False,
+                    confidence=0.0,
+                ),
+            ],
+            message="Document ID not found in identity registry.",
         )
 
     extracted_name = _normalize(request.name)
@@ -83,20 +103,9 @@ def validate_identity(request: IdentityValidationRequest) -> IdentityValidationR
         sum(f.confidence for f in field_matches) / len(field_matches),
         2,
     )
-    is_aadhaar = len(re.sub(r"\D", "", request.document_id)) == 12
     identity_verified = all(f.match for f in field_matches) and record.status == "active"
 
-    if is_aadhaar and field_matches[0].match and record.status == "active":
-        # Aadhaar number matched registry — valid UID even if glare blocked name/DOB OCR
-        identity_verified = True
-        if name_conf < 75.0 or dob_conf < 80.0:
-            message = (
-                "Aadhaar number verified in registry (UID valid). "
-                "Name/DOB could not be confirmed from this photo — upload a flat, glare-free scan for full match."
-            )
-        else:
-            message = "Aadhaar identity fully verified against core registry."
-    elif identity_verified:
+    if identity_verified:
         message = "Identity verified against core registry."
     else:
         parts = []
