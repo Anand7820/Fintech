@@ -61,6 +61,20 @@
   --surface: rgba(30, 27, 46, 0.55);
 }
 
+html {
+  background-color: var(--background);
+}
+
+.light-theme {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+.light-theme img,
+.light-theme svg {
+  /* Re-invert images and SVGs so they look normal */
+  filter: invert(1) hue-rotate(180deg);
+}
+
 body {
   background-color: var(--background);
   color: var(--foreground);

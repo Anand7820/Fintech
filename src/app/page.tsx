@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { Fingerprint, Database, RotateCcw, ScanLine, Radio, Lightbulb, LockKeyhole, CircleAlert } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Fingerprint, Database, RotateCcw, ScanLine, Radio, Lightbulb, LockKeyhole, CircleAlert, Sun, Moon } from 'lucide-react';
 import { AnalyticsGrid } from '@/components/features/AnalyticsGrid';
 import { UploadDropzone } from '@/components/features/UploadDropzone';
 import { SplitScreenWorkflow } from '@/components/features/SplitScreenWorkflow';
@@ -9,6 +9,7 @@ import { LogsTimeline } from '@/components/features/LogsTimeline';
 import { useKYCWorkflow } from '@/hooks/useKYCWorkflow';
 
 export default function Home() {
+  const [isLightMode, setIsLightMode] = useState(false);
   const {
     status,
     uploadProgress,
@@ -28,12 +29,39 @@ export default function Home() {
     handleSpeedChange,
   } = useKYCWorkflow();
 
+  useEffect(() => {
+    // Check if user previously set a theme preference
+    if (typeof window !== 'undefined') {
+      const isLight = document.documentElement.classList.contains('light-theme');
+      setIsLightMode(isLight);
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.toggle('light-theme');
+      setIsLightMode(document.documentElement.classList.contains('light-theme'));
+    }
+  };
+
+  // Trigger the requested automation immediately on page load
+  useEffect(() => {
+    if (mounted) {
+      // Small timeout to ensure everything is rendered before starting the automation
+      const timer = setTimeout(() => {
+        handleSelectTemplate('passport');
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mounted]);
+
   if (!mounted) {
     return null; // Avoid hydration mismatch on initial render
   }
 
   return (
-    <div className="flex-1 bg-[#0a0814] text-violet-50 flex flex-col min-h-screen">
+    <div className="flex-1 flex flex-col min-h-screen bg-[var(--background)] text-[var(--foreground)] transition-colors duration-300">
       {/* Top Banner Header */}
       <header className="border-b border-violet-900/40 bg-violet-950/30 backdrop-blur-md sticky top-0 z-50 px-4 lg:px-8 py-3.5 flex items-center justify-between">
         <div className="flex items-center space-x-3">
@@ -78,6 +106,15 @@ export default function Home() {
               {apiConnected ? 'SYSTEMS NORMAL' : 'DEMO MODE'}
             </span>
           </div>
+          
+          {/* Theme Toggle Button */}
+          <button
+            onClick={toggleTheme}
+            className="p-1.5 rounded-md hover:bg-violet-500/20 text-slate-400 hover:text-violet-300 transition-colors"
+            title="Toggle Theme"
+          >
+            {isLightMode ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+          </button>
         </div>
       </header>
 
