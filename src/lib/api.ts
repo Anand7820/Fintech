@@ -7,16 +7,34 @@ export type ApiHealth = {
   version: string;
 };
 
+export type DetectedRegionApi = {
+  field_key: string;
+  label: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  confidence: number;
+};
+
 export type VerifyDocumentApiResponse = {
   verification_id: string;
   status: 'verified' | 'flagged' | 'pending_review';
   document_type?: string;
   aadhaar_checksum_valid?: boolean | null;
+  detected_regions?: DetectedRegionApi[];
+  preprocessing?: {
+    output_width: number;
+    output_height: number;
+  };
   ocr: {
     fields: {
       name: string | null;
+      surname?: string | null;
+      given_names?: string | null;
       date_of_birth: string | null;
       document_id: string | null;
+      nationality?: string | null;
     };
     ocr_confidence: number;
     raw_text_snippet: string;

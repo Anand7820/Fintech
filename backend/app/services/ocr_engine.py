@@ -11,7 +11,15 @@ import numpy as np
 from app.core.config import Settings
 from app.core.exceptions import OCRProcessingError
 from app.models.schemas import ExtractedFields
+from app.core.exceptions import ScreenshotUploadError
+from app.services.aadhaar_ocr import (
+    extract_aadhaar_fields,
+    is_dashboard_screenshot_text,
+    is_plausible_person_name,
+)
+from app.services.passport_ocr import extract_passport_fields
 from app.utils.aadhaar import extract_aadhaar_number, is_aadhaar_document
+from app.utils.passport import is_blocked_passport_name, is_passport_document
 
 try:
     import pytesseract
@@ -103,16 +111,71 @@ def run_ocr(image_bgr: np.ndarray, settings: Settings) -> tuple[ExtractedFields,
     else:
         raw_text, ocr_confidence = _extract_text_heuristic(gray)
 
-    doc_type = detect_document_type(raw_text)
+    if is_dashboard_screenshot_text(raw_text):
+        raise ScreenshotUploadError(
+            "This image looks like a screenshot of the KYC dashboard, not your physical ID document. "
+            "Please upload a direct photo of your passport, Aadhaar, or other ID (not a screen capture of this app).",
+            code="screenshot_not_document",
+        )
+
+    # Passport before Aadhaar — both can contain "India" and long digit strings
+    if is_passport_document(raw_text):
+        doc_type = "passport"
+    else:
+        doc_type = detect_document_type(raw_text)
+
+    if doc_type == "passport":
+        doc_type = "passport"
+        try:
+            fields, ocr_confidence, raw_text = extract_passport_fields(
+                image_bgr, settings, fallback_text=raw_text
+            )
+        except ValueError as exc:
+            if str(exc) == "uploaded_image_looks_like_app_screenshot":
+                raise ScreenshotUploadError(
+                    "Upload a photo of your physical passport page, not a screenshot of this verification screen.",
+                    code="screenshot_not_document",
+                ) from exc
+            raise
+        return fields, ocr_confidence, raw_text, doc_type
+
+    if doc_type == "aadhaar" or _looks_like_aadhaar_image(image_bgr):
+        doc_type = "aadhaar"
+        try:
+            fields, ocr_confidence, raw_text = extract_aadhaar_fields(
+                image_bgr, settings, fallback_text=raw_text
+            )
+        except ValueError as exc:
+            if str(exc) == "uploaded_image_looks_like_app_screenshot":
+                raise ScreenshotUploadError(
+                    "Upload a photo of your physical Aadhaar card, not a screenshot of this verification screen.",
+                    code="screenshot_not_document",
+                ) from exc
+            raise
+        return fields, ocr_confidence, raw_text, doc_type
+
     fields = parse_kyc_fields(raw_text, document_type=doc_type)
     return fields, ocr_confidence, raw_text, doc_type
 
 
+def _looks_like_aadhaar_image(image_bgr: np.ndarray) -> bool:
+    """Portrait-oriented photo with aspect ratio typical of full Aadhaar letter scans."""
+    h, w = image_bgr.shape[:2]
+    if h < w:
+        return False
+    ratio = h / max(w, 1)
+    return ratio > 1.15
+
+
 def detect_document_type(raw_text: str) -> str:
+    if is_passport_document(raw_text):
+        return "passport"
     if is_aadhaar_document(raw_text):
         return "aadhaar"
     upper = raw_text.upper()
-    if "PASSPORT" in upper or re.search(r"\bP\d{8}", upper):
+    if re.search(r"\b[A-Z]{5}\d{4}[A-Z]\b", upper) or "INCOME TAX" in upper or "PERMANENT ACCOUNT" in upper:
+        return "pan"
+    if "PASSPORT" in upper or re.search(r"\b[A-Z]\d{7}\b", upper) or re.search(r"P<IND", upper):
         return "passport"
     if "LICENSE" in upper or "DMV" in upper or re.search(r"\bDL\d{6}", upper):
         return "license"
@@ -177,7 +240,7 @@ def _parse_aadhaar_name(text: str) -> str | None:
             # Typical Indian full name on Aadhaar: First Middle Last
             if tokens[0] == "ANAND" or (len(tokens) >= 3 and tokens[-1] in ("KAMBLE", "PATIL", "SHAH")):
                 return candidate.title()
-            if len(tokens) >= 2 and all(t.isalpha() for t in tokens):
+            if len(tokens) >= 2 and all(t.isalpha() for t in tokens) and is_plausible_person_name(candidate):
                 return candidate.title()
     # Direct match for this user's common OCR output
     direct = re.search(
@@ -196,15 +259,17 @@ def _parse_dob_slash(text: str) -> str | None:
 
 def _parse_name(text: str) -> str | None:
     patterns = [
-        r"(?:SURNAME|GIVEN NAMES?|FULL NAME|NAME)[:\s/]+([A-Z][A-Z\s\-']{2,40})",
-        r"([A-Z]{2,15}\s+[A-Z]{2,15}(?:\s+[A-Z]{2,15})?)",
+        r"(?:SURNAME)[:\s/]+([A-Z][A-Z\s\-']{2,30})",
+        r"(?:GIVEN\s*NAMES?)[:\s/]+([A-Z][A-Z\s\-']{2,40})",
+        r"(?:FULL NAME|NAME)[:\s/]+([A-Z][A-Z\s\-']{2,40})",
     ]
     for pattern in patterns:
         match = re.search(pattern, text)
         if match:
             candidate = match.group(1).strip()
-            if len(candidate) > 4 and not candidate.isdigit():
-                return candidate.title()
+            if len(candidate) > 4 and not is_blocked_passport_name(candidate):
+                if is_plausible_person_name(candidate):
+                    return candidate.title()
     return None
 
 

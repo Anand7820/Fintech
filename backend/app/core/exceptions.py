@@ -14,6 +14,10 @@ class InvalidDocumentError(KYCBaseError):
     pass
 
 
+class ScreenshotUploadError(InvalidDocumentError):
+    """User uploaded a screenshot of the app instead of a physical document."""
+
+
 class OCRProcessingError(KYCBaseError):
     pass
 
@@ -29,6 +33,7 @@ class IdentityNotFoundError(KYCBaseError):
 def to_http_exception(exc: KYCBaseError) -> HTTPException:
     status_map: dict[type[KYCBaseError], int] = {
         InvalidDocumentError: status.HTTP_400_BAD_REQUEST,
+        ScreenshotUploadError: status.HTTP_400_BAD_REQUEST,
         OCRProcessingError: status.HTTP_422_UNPROCESSABLE_ENTITY,
         ForgeryAnalysisError: status.HTTP_422_UNPROCESSABLE_ENTITY,
         IdentityNotFoundError: status.HTTP_404_NOT_FOUND,

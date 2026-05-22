@@ -116,16 +116,30 @@ def extract_aadhaar_number(text: str) -> tuple[str | None, bool]:
 
 
 def is_aadhaar_document(text: str) -> bool:
-    markers = (
+    """True only for actual Aadhaar cards — not Indian passports."""
+    upper = text.upper()
+    # Passport pages also say "India" / have 12-digit MRZ fragments — exclude first
+    if "PASSPORT" in upper or "P<IND" in upper or re.search(r"\b[A-Z]\d{7}\b", upper):
+        return False
+    if "REPUBLIC OF INDIA" in upper and ("SURNAME" in upper or "GIVEN NAME" in upper):
+        return False
+
+    strong_markers = (
         "AADHAAR",
         "ADHAR",
         "UIDAI",
         "UNIQUE IDENTIFICATION",
-        "GOVERNMENT OF INDIA",
         "आधार",
         "माझे आधार",
+        "ENROLMENT",
+        "ENROLLMENT NO",
     )
-    upper = text.upper()
-    return any(m in upper for m in markers) or bool(
-        re.search(r"\d{4}\s?\d{4}\s?\d{4}", text)
-    )
+    if any(m in upper for m in strong_markers):
+        return True
+
+    # 4+4+4 grouping only when explicitly labelled as Aadhaar
+    if re.search(r"(?:AADHAAR|ADHAR|UID)[^\d]{0,20}\d{4}\s?\d{4}\s?\d{4}", upper):
+        return True
+
+    aadhaar, valid = extract_aadhaar_number(text)
+    return bool(valid and aadhaar)

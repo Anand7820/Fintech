@@ -32,6 +32,10 @@ export interface KYCDocument {
   type: 'passport' | 'license' | 'utility_bill' | 'aadhaar';
   name: string;
   url: string; // fallback mock or user-uploaded base64/objectURL
+  previewUrl?: string; // blob URL of uploaded file (show real scan, not SVG mock)
+  /** Natural pixel size of uploaded scan — keeps overlay boxes aligned */
+  imageWidth?: number;
+  imageHeight?: number;
   status: VerificationStatus;
   boundingBoxes: BoundingBox[];
   extractedFields: ExtractedField[];

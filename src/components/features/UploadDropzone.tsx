@@ -109,7 +109,7 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
                 Drag & drop document file, or <span className="text-indigo-400 group-hover:underline">browse</span>
               </p>
               <p className="text-xs text-slate-400 mt-2">
-                Supports JPG, PNG, PDF up to 10MB
+                Upload a photo of your physical Aadhaar/ID card (not a screenshot of this screen). JPG, PNG, PDF up to 10MB
               </p>
               {dragError && (
                 <div className="mt-3 flex items-center text-xs text-rose-400 bg-rose-500/10 px-3 py-1.5 rounded border border-rose-500/20">

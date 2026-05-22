@@ -72,6 +72,23 @@ export const MOCK_DOCUMENTS: Record<string, KYCDocument> = {
       { id: 'ind-8', name: 'Cross-Database Validation', status: 'FAILED', details: 'Date of birth does not match CA DMV records for license DL88210344.' },
     ]
   },
+  aadhaar: {
+    id: 'doc-aadhaar-template',
+    type: 'aadhaar',
+    name: 'Aadhaar Card',
+    url: 'aadhaar',
+    status: 'success',
+    boundingBoxes: [
+      { label: 'Full Document', x: 1, y: 1, width: 98, height: 98, fieldKey: 'full_document' },
+      { label: 'Aadhaar Letter (UID section)', x: 2, y: 2, width: 96, height: 48, fieldKey: 'letter_section' },
+      { label: 'ID Card — Photo', x: 3, y: 50, width: 28, height: 40, fieldKey: 'portrait' },
+      { label: 'ID Card — Name · DOB · Gender', x: 32, y: 50, width: 40, height: 40, fieldKey: 'identity_details' },
+      { label: 'ID Card — QR Code', x: 74, y: 50, width: 24, height: 40, fieldKey: 'qr_code' },
+      { label: 'Aadhaar Number', x: 3, y: 86, width: 94, height: 11, fieldKey: 'doc_number' },
+    ],
+    extractedFields: [],
+    safetyIndicators: [],
+  },
   utility_bill: {
     id: 'doc-bill-003',
     type: 'utility_bill',

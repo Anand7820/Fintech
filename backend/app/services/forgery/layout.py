@@ -18,11 +18,19 @@ def analyze_layout(
     Uses normalized cross-correlation on edge maps.
     """
     from app.utils.aadhaar import is_aadhaar_document
+    from app.utils.passport import is_passport_document
 
     if raw_text and is_aadhaar_document(raw_text):
         return LayoutAnalysis(
             template_matched="aadhaar",
             layout_match_score=0.82,
+            structural_integrity=True,
+        )
+
+    if raw_text and is_passport_document(raw_text):
+        return LayoutAnalysis(
+            template_matched="passport",
+            layout_match_score=0.80,
             structural_integrity=True,
         )
 

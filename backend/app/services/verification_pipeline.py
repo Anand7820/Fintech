@@ -7,7 +7,10 @@ import time
 import uuid
 
 from app.core.config import get_settings
-from app.core.exceptions import InvalidDocumentError
+from app.core.exceptions import InvalidDocumentError, ScreenshotUploadError
+from app.registry.mock_registry import lookup_identity
+from app.services.aadhaar_ocr import name_similarity
+from app.services.field_detection import detect_field_regions
 from app.core.metrics_store import metrics_store
 from app.models.schemas import OCRResult, VerifyDocumentResponse
 from app.services.document_loader import load_document_bgr
@@ -15,6 +18,7 @@ from app.services.forgery.pipeline import run_forgery_pipeline
 from app.services.ocr_engine import run_ocr
 from app.services.preprocessing import preprocess_document
 from app.utils.aadhaar import extract_aadhaar_number, is_aadhaar_document, verhoeff_valid
+from app.utils.passport import is_passport_document
 
 
 def _determine_status(
@@ -37,6 +41,17 @@ def _determine_status(
             if has_name and ocr_confidence >= 40.0 and forgery_score < settings.forgery_alert_threshold:
                 return "verified"
             # Valid Aadhaar number but poor photo OCR — manual review, not "fake"
+            return "pending_review"
+        if has_document_id or has_name:
+            return "pending_review"
+        return "flagged"
+
+    if document_type == "passport":
+        if is_suspected_fake and forgery_score >= 0.78:
+            return "flagged"
+        if has_document_id and has_name and ocr_confidence >= 42.0:
+            if forgery_score < settings.forgery_alert_threshold:
+                return "verified"
             return "pending_review"
         if has_document_id or has_name:
             return "pending_review"
@@ -71,7 +86,9 @@ def _run_pipeline_sync(
     fields, ocr_confidence, raw_text, document_type = run_ocr(processed_bgr, settings)
 
     aadhaar_checksum_valid: bool | None = None
-    if document_type == "aadhaar" or is_aadhaar_document(raw_text):
+    if is_passport_document(raw_text):
+        document_type = "passport"
+    elif document_type == "aadhaar" or is_aadhaar_document(raw_text):
         document_type = "aadhaar"
         aadhaar, checksum_ok = extract_aadhaar_number(raw_text)
         aadhaar_checksum_valid = checksum_ok
@@ -79,6 +96,31 @@ def _run_pipeline_sync(
             fields.document_id = aadhaar
         if aadhaar and verhoeff_valid(aadhaar):
             aadhaar_checksum_valid = True
+
+    # When UID is valid, use registry name/DOB if OCR misread the photo (common on glare)
+    if document_type == "aadhaar" and fields.document_id and aadhaar_checksum_valid:
+        record = lookup_identity(fields.document_id)
+        if record:
+            if not fields.name or name_similarity(fields.name, record.name) < 72.0:
+                fields.name = record.name
+            if not fields.date_of_birth:
+                fields.date_of_birth = record.date_of_birth
+            ocr_confidence = max(ocr_confidence, 88.0)
+
+    if document_type == "passport" and fields.document_id:
+        record = lookup_identity(fields.document_id)
+        if record:
+            if not fields.name or name_similarity(fields.name, record.name) < 72.0:
+                fields.name = record.name
+                parts = record.name.split()
+                if len(parts) >= 2:
+                    fields.surname = parts[-1]
+                    fields.given_names = " ".join(parts[:-1])
+            if not fields.date_of_birth:
+                fields.date_of_birth = record.date_of_birth
+            if not fields.nationality:
+                fields.nationality = record.nationality
+            ocr_confidence = max(ocr_confidence, 85.0)
 
     ocr = OCRResult(
         fields=fields,
@@ -90,6 +132,10 @@ def _run_pipeline_sync(
         image_bgr=image_bgr,
         settings=settings,
         raw_text=raw_text,
+    )
+
+    detected_regions = detect_field_regions(
+        image_bgr, settings, fields, document_type
     )
 
     status = _determine_status(
@@ -116,6 +162,7 @@ def _run_pipeline_sync(
         preprocessing=preprocessing,
         ocr=ocr,
         forgery=forgery,
+        detected_regions=detected_regions,
         processing_time_ms=round((time.perf_counter() - started) * 1000, 2),
     )
 

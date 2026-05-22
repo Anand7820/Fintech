@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { KYCDocument, BoundingBox } from '@/types/kyc';
+import { isFieldInRegion } from '@/lib/aadhaarRegions';
 import { ShieldCheck, ShieldAlert, ShieldX, Scan, Eye, Heart, BarChart3 } from 'lucide-react';
 
 interface SplitScreenWorkflowProps {
@@ -82,24 +83,89 @@ export const SplitScreenWorkflow: React.FC<SplitScreenWorkflowProps> = ({ docume
         <div className="w-full flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
             <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-ping" />
-            <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Document Scan & Bounding Box Overlays</span>
+            <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Document Scan — Auto-Detected Regions</span>
           </div>
           <span className="text-[10px] text-slate-500 font-mono">ID: {document.id}</span>
         </div>
 
-        {/* Document Frame Container */}
-        <div className="relative w-full max-w-[420px] aspect-[1.58/1] bg-slate-900 rounded-lg overflow-hidden border border-slate-800/80 shadow-2xl group">
-          
-          {/* Real-time scanning animation overlay */}
-          {status === 'processing' && (
-            <div className="absolute inset-0 pointer-events-none z-30">
-              <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-indigo-400 to-transparent shadow-[0_0_15px_rgba(99,102,241,0.8)] animate-scan" />
-              <div className="absolute inset-0 bg-indigo-500/5 backdrop-blur-[0.5px]" />
+        {/* Document Frame — image-sized wrapper so region boxes align with the scan */}
+        <div className="flex justify-center items-center w-full min-h-[360px] max-h-[560px] bg-slate-950 rounded-lg border border-slate-800/80 shadow-2xl group overflow-hidden p-2">
+          {document.previewUrl ? (
+            <div
+              className="relative mx-auto w-full"
+              style={{
+                aspectRatio:
+                  document.imageWidth && document.imageHeight
+                    ? `${document.imageWidth} / ${document.imageHeight}`
+                    : undefined,
+                maxHeight: '540px',
+                maxWidth: '100%',
+              }}
+            >
+              <img
+                src={document.previewUrl}
+                alt="Uploaded document"
+                className="absolute inset-0 w-full h-full object-contain rounded-sm"
+              />
+              {status === 'processing' && (
+                <div className="absolute inset-0 pointer-events-none z-30 rounded-sm overflow-hidden">
+                  <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-indigo-400 to-transparent shadow-[0_0_15px_rgba(99,102,241,0.8)] animate-scan" />
+                  <div className="absolute inset-0 bg-indigo-500/5" />
+                </div>
+              )}
+              {status !== 'processing' &&
+                document.boundingBoxes.map((box) => {
+                  const isHovered = hoveredField === box.fieldKey;
+                  const isFullDoc = box.fieldKey === 'full_document';
+                  return (
+                    <div
+                      key={box.fieldKey}
+                      onMouseEnter={() => setHoveredField(box.fieldKey)}
+                      onMouseLeave={() => setHoveredField(null)}
+                      style={{
+                        left: `${box.x}%`,
+                        top: `${box.y}%`,
+                        width: `${box.width}%`,
+                        height: `${box.height}%`,
+                      }}
+                      className={`absolute z-20 rounded-lg cursor-pointer transition-all duration-200
+                        ${isFullDoc
+                          ? 'border border-dashed border-indigo-500/25 bg-indigo-500/[0.03] pointer-events-none'
+                          : ''}
+                        ${!isFullDoc && isHovered
+                          ? 'border-2 border-indigo-400 bg-indigo-500/25 shadow-[0_0_16px_rgba(99,102,241,0.5)]'
+                          : ''}
+                        ${!isFullDoc && !isHovered
+                          ? 'border-2 border-indigo-400/50 bg-indigo-500/10 hover:border-indigo-400 hover:bg-indigo-500/20'
+                          : ''}
+                      `}
+                    >
+                      {!isFullDoc && (
+                        <span
+                          className={`absolute left-1 top-1 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wide
+                            ${isHovered ? 'bg-indigo-500 text-white' : 'bg-slate-950/80 text-indigo-300 border border-indigo-500/30'}
+                          `}
+                        >
+                          {box.label}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
             </div>
-          )}
+          ) : (
+            <div
+              className={`relative w-full max-w-[420px] aspect-[1.58/1] bg-slate-900`}
+            >
+              {status === 'processing' && (
+                <div className="absolute inset-0 pointer-events-none z-30">
+                  <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-indigo-400 to-transparent shadow-[0_0_15px_rgba(99,102,241,0.8)] animate-scan" />
+                  <div className="absolute inset-0 bg-indigo-500/5 backdrop-blur-[0.5px]" />
+                </div>
+              )}
 
-          {/* Render Vector SVGs representing specific documents */}
-          {document.type === 'passport' && (
+              {/* Render Vector SVGs representing specific documents */}
+              {document.type === 'passport' && (
             <svg className="absolute inset-0 w-full h-full text-slate-300" viewBox="0 0 632 400" fill="none">
               <rect width="632" height="400" fill="#141c2f"/>
               {/* Cover texture / Stamp outline */}
@@ -130,7 +196,7 @@ export const SplitScreenWorkflow: React.FC<SplitScreenWorkflowProps> = ({ docume
             </svg>
           )}
 
-          {document.type === 'license' && (
+              {document.type === 'license' && (
             <svg className="absolute inset-0 w-full h-full text-slate-300" viewBox="0 0 632 400" fill="none">
               <rect width="632" height="400" fill="#131e35"/>
               {/* State Header */}
@@ -160,7 +226,7 @@ export const SplitScreenWorkflow: React.FC<SplitScreenWorkflowProps> = ({ docume
             </svg>
           )}
 
-          {document.type === 'utility_bill' && (
+              {document.type === 'utility_bill' && (
             <svg className="absolute inset-0 w-full h-full" viewBox="0 0 632 400" fill="none">
               <rect width="632" height="400" fill="#0f172a"/>
               {/* Invoice Layout */}
@@ -197,8 +263,8 @@ export const SplitScreenWorkflow: React.FC<SplitScreenWorkflowProps> = ({ docume
             </svg>
           )}
 
-          {/* Interactive Bounding Box Overlays */}
-          {status !== 'processing' && document.boundingBoxes.map((box) => {
+              {/* Interactive Bounding Box Overlays (SVG mock documents only) */}
+              {status !== 'processing' && document.boundingBoxes.map((box) => {
             const isHovered = hoveredField === box.fieldKey;
             return (
               <div
@@ -225,7 +291,9 @@ export const SplitScreenWorkflow: React.FC<SplitScreenWorkflowProps> = ({ docume
                 )}
               </div>
             );
-          })}
+              })}
+            </div>
+          )}
         </div>
 
         {/* Hover Highlight Tip */}
@@ -296,7 +364,10 @@ export const SplitScreenWorkflow: React.FC<SplitScreenWorkflowProps> = ({ docume
             ) : (
               <div className="space-y-3">
                 {document.extractedFields.map((field) => {
-                  const isHovered = hoveredField === field.key;
+                  const isHovered =
+                    document.type === 'aadhaar' || document.type === 'passport'
+                      ? isFieldInRegion(field.key, hoveredField)
+                      : hoveredField === field.key;
                   const isRevealed = revealedFields[field.key] || false;
 
                   return (

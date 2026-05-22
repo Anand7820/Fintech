@@ -13,8 +13,11 @@ class PreprocessingSummary(BaseModel):
 
 class ExtractedFields(BaseModel):
     name: str | None = None
+    surname: str | None = None
+    given_names: str | None = None
     date_of_birth: str | None = None
     document_id: str | None = None
+    nationality: str | None = None
 
 
 class OCRResult(BaseModel):
@@ -41,6 +44,18 @@ class ELAAnalysis(BaseModel):
     suspicious_region_ratio: float = Field(..., ge=0.0, le=1.0)
 
 
+class DetectedRegion(BaseModel):
+    """Auto-detected overlay region (percent of image: 0–100)."""
+
+    field_key: str
+    label: str
+    x: float = Field(..., ge=0.0, le=100.0)
+    y: float = Field(..., ge=0.0, le=100.0)
+    width: float = Field(..., ge=0.0, le=100.0)
+    height: float = Field(..., ge=0.0, le=100.0)
+    confidence: float = Field(default=80.0, ge=0.0, le=100.0)
+
+
 class ForgeryAnalysis(BaseModel):
     layout: LayoutAnalysis
     metadata: MetadataAnalysis
@@ -57,6 +72,7 @@ class VerifyDocumentResponse(BaseModel):
     preprocessing: PreprocessingSummary
     ocr: OCRResult
     forgery: ForgeryAnalysis
+    detected_regions: list[DetectedRegion] = Field(default_factory=list)
     processing_time_ms: float
 
 
