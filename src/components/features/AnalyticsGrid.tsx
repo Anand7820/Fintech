@@ -1,5 +1,6 @@
 import React from 'react';
 import { FileText, CheckCircle2, ShieldAlert, Clock, TrendingUp, TrendingDown } from 'lucide-react';
+import { formatCount } from '@/lib/format';
 import { AnalyticsMetrics } from '@/types/kyc';
 
 interface AnalyticsGridProps {
@@ -22,7 +23,7 @@ export const AnalyticsGrid: React.FC<AnalyticsGridProps> = ({ metrics }) => {
         <div className="mt-4 flex items-end justify-between z-10">
           <div>
             <span className="text-3xl font-extrabold text-white glow-text-indigo tracking-tight">
-              {metrics.totalProcessed.toLocaleString()}
+              {formatCount(metrics.totalProcessed)}
             </span>
             <div className="flex items-center text-emerald-400 text-xs mt-1 font-medium">
               <TrendingUp className="w-3.5 h-3.5 mr-1" />

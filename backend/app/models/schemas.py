@@ -52,6 +52,8 @@ class ForgeryAnalysis(BaseModel):
 class VerifyDocumentResponse(BaseModel):
     verification_id: str
     status: Literal["verified", "flagged", "pending_review"]
+    document_type: str = "unknown"
+    aadhaar_checksum_valid: bool | None = None
     preprocessing: PreprocessingSummary
     ocr: OCRResult
     forgery: ForgeryAnalysis

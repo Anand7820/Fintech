@@ -7,12 +7,12 @@ import threading
 from pathlib import Path
 from typing import Any
 
-from app.core.config import settings
+from app.core.config import get_settings
 
 
 class MetricsStore:
     def __init__(self, path: Path | None = None) -> None:
-        self._path = path or settings.metrics_db_path
+        self._path = path or get_settings().upload_temp_dir.parent / "metrics.json"
         self._lock = threading.Lock()
         self._data: dict[str, int] = {
             "total_verified": 0,

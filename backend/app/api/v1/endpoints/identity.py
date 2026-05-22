@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 from app.core.exceptions import KYCBaseError, to_http_exception
 from app.models.schemas import IdentityValidationRequest, IdentityValidationResponse
-from app.services.identity import validate_identity
+from app.services.identity_validator import validate_identity
 
 router = APIRouter()
 

@@ -3,11 +3,18 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Shield, Server, RefreshCw, Cpu, Activity, Info, Globe, AlertCircle } from 'lucide-react';
 import { KYCDocument, ProcessingLog, VerificationStatus, AnalyticsMetrics, LogLevel } from '@/types/kyc';
-import { MOCK_DOCUMENTS, MOCK_METRICS, SIMULATION_LOGS } from '@/constants/mockData';
-import { AnalyticsGrid } from '@/components/AnalyticsGrid';
-import { UploadDropzone } from '@/components/UploadDropzone';
-import { SplitScreenWorkflow } from '@/components/SplitScreenWorkflow';
-import { LogsTimeline } from '@/components/LogsTimeline';
+import { MOCK_DOCUMENTS, MOCK_METRICS, SIMULATION_LOGS } from '@/lib/constants';
+import {
+  checkApiHealth,
+  fetchDashboardMetrics,
+  validateIdentity,
+  verifyDocument,
+} from '@/lib/api';
+import { formatLogTimestamp } from '@/lib/format';
+import { AnalyticsGrid } from '@/components/features/AnalyticsGrid';
+import { UploadDropzone } from '@/components/features/UploadDropzone';
+import { SplitScreenWorkflow } from '@/components/features/SplitScreenWorkflow';
+import { LogsTimeline } from '@/components/features/LogsTimeline';
 
 export default function Home() {
   // Core State
@@ -21,7 +28,10 @@ export default function Home() {
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [simulationSpeed, setSimulationSpeed] = useState<number>(1);
   const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
-  
+  const [mounted, setMounted] = useState(false);
+  const [apiConnected, setApiConnected] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+
   // Refs for tracking simulation intervals & active step
   const simulationRef = useRef<{
     logQueue: Omit<ProcessingLog, 'timestamp'>[];
@@ -69,7 +79,7 @@ export default function Home() {
           // Add first OCR log immediately
           if (sim.logQueue.length > 0) {
             const firstLog = sim.logQueue[0];
-            const timestamp = new Date().toLocaleTimeString();
+            const timestamp = formatLogTimestamp();
             setLogs([{
               ...firstLog,
               timestamp
@@ -86,7 +96,7 @@ export default function Home() {
     // Phase 2: Processing logs one by one
     if (sim.currentIndex < sim.logQueue.length) {
       const nextLog = sim.logQueue[sim.currentIndex];
-      const timestamp = new Date().toLocaleTimeString();
+      const timestamp = formatLogTimestamp();
       
       setLogs((prev) => [...prev, { ...nextLog, timestamp }]);
       sim.currentIndex += 1;
@@ -154,7 +164,7 @@ export default function Home() {
     if (!docPreset || !logsPreset) return;
 
     // Define initial ingestion log
-    const timestamp = new Date().toLocaleTimeString();
+    const timestamp = formatLogTimestamp();
     const initialLog: ProcessingLog = {
       id: 'ingestion-init',
       stage: 'received',
@@ -180,91 +190,185 @@ export default function Home() {
     setStatus('uploading');
   };
 
-  // Trigger custom file upload simulation
-  const handleCustomFileUpload = (file: File) => {
+  const mapApiStatus = (apiStatus: string): VerificationStatus => {
+    if (apiStatus === 'verified') return 'success';
+    if (apiStatus === 'flagged') return 'failed';
+    return 'warning';
+  };
+
+  // Real file upload via FastAPI backend
+  const handleCustomFileUpload = async (file: File) => {
     handleReset();
-
-    // Create a mock document object representation for the custom uploaded file
-    const docId = `custom-doc-${Math.floor(Math.random() * 1000)}`;
-    const isPDF = file.type === 'application/pdf';
+    setApiError(null);
     const cleanFileName = file.name;
+    const isPDF = file.type === 'application/pdf';
 
-    const customDoc: KYCDocument = {
-      id: docId,
-      type: isPDF ? 'utility_bill' : 'passport', // Fallback type structure
-      name: cleanFileName,
-      url: isPDF ? 'utility_bill' : 'passport',
-      status: 'success', // Always pass for custom files in demo mode
-      boundingBoxes: isPDF 
-        ? MOCK_DOCUMENTS.utility_bill.boundingBoxes 
-        : MOCK_DOCUMENTS.passport.boundingBoxes,
-      extractedFields: isPDF
-        ? [
-            { key: 'provider', label: 'Service Provider', value: 'UPLOADED STATEMENT SOURCE', confidence: 98.2 },
-            { key: 'statement_date', label: 'Statement Date', value: '18 MAY 2026', confidence: 99.4, isMatch: true },
-            { key: 'customer_name', label: 'Customer Name', value: 'USER TEST UPLOAD', confidence: 95.7 },
-            { key: 'address', label: 'Service Address', value: '123 MAIN ST, NEW YORK, NY 10001', confidence: 96.1, isMatch: true },
-            { key: 'account_number', label: 'Account Number', value: 'ACT-9821-2291', confidence: 99.0 },
-            { key: 'amount_due', label: 'Amount Due', value: '$120.00', confidence: 99.8 },
-          ]
-        : [
-            { key: 'doc_type', label: 'Document Type', value: 'PASSPORT (P)', confidence: 99.1 },
-            { key: 'doc_number', label: 'Document Number', value: 'P' + Math.floor(10000000 + Math.random() * 90000000), confidence: 98.9, isMatch: true },
-            { key: 'surname', label: 'Surname', value: 'USER', confidence: 99.5 },
-            { key: 'given_names', label: 'Given Names', value: 'CUSTOM UPLOAD', confidence: 99.0 },
-            { key: 'nationality', label: 'Nationality', value: 'UNITED STATES (USA)', confidence: 99.8 },
-            { key: 'dob', label: 'Date of Birth', value: '01 JAN 1990', confidence: 99.0, isMatch: true },
-            { key: 'expiry_date', label: 'Date of Expiry', value: '01 JAN 2035', confidence: 98.7, isMatch: true },
-          ],
-      safetyIndicators: isPDF
-        ? [
-            { id: 'custom-ind-1', name: 'Document Recency Check', status: 'PASSED', details: 'Document date is within 90 days.' },
-            { id: 'custom-ind-2', name: 'Address Consistency Check', status: 'PASSED', details: 'Extracted address matches applicant profile.' },
-            { id: 'custom-ind-3', name: 'Digital Metadata Integrity', status: 'PASSED', details: 'No editing software signatures found in metadata.' },
-          ]
-        : [
-            { id: 'custom-ind-1', name: 'Face Match Biometrics', status: 'PASSED', details: 'Biometrics face match check completed with 95% match rating.', score: 95.0 },
-            { id: 'custom-ind-2', name: 'MRZ Checksum', status: 'PASSED', details: 'MRZ barcode data and checksum fields validate successfully.', score: 100 },
-            { id: 'custom-ind-3', name: 'Digital Alteration Audit', status: 'PASSED', details: 'No pixel manipulation or overlay editing detected.' },
-          ],
-    };
-
-    // Custom logs timeline
-    const customLogsQueue: Omit<ProcessingLog, 'timestamp'>[] = [
-      { id: 'log-c1', stage: 'received', message: `Custom file "${cleanFileName}" (${(file.size / 1024 / 1024).toFixed(2)} MB) ingested.`, level: 'success' },
-      { id: 'log-c2', stage: 'ocr', message: 'OCR analysis queue: Extracting structural layout...', level: 'info' },
-      { id: 'log-c3', stage: 'ocr', message: `OCR complete. Identified document structural layout as ${isPDF ? 'Utility Statement' : 'Identification Passport'}.`, level: 'success' },
-      { id: 'log-c4', stage: 'alignment', message: 'Bounding box positioning maps matching standard model anchors.', level: 'success' },
-      { id: 'log-c5', stage: 'forgery', message: 'Executing tamper check: Analysis of metadata headers, compression artifacts, and pixel levels...', level: 'info' },
-      { id: 'log-c6', stage: 'forgery', message: 'No metadata alterations or image retouch signatures detected. Forgery check passed.', level: 'success' },
-      { id: 'log-c7', stage: 'biometrics', message: 'Verifying cross-registry databases and profile records...', level: 'info' },
-      { id: 'log-c8', stage: 'biometrics', message: 'Validation success: Extracted fields successfully match registry reference profiles.', level: 'success' },
-      { id: 'log-c9', stage: 'final', message: 'KYC Document verification PASSED. Added to approved files directory.', level: 'success' }
-    ];
-
-    const timestamp = new Date().toLocaleTimeString();
-    const initialLog: ProcessingLog = {
-      id: 'ingestion-init',
-      stage: 'received',
-      message: `System connecting to ingestion stream. Uploading custom user file...`,
-      timestamp,
-      level: 'info'
-    };
-
-    simulationRef.current = {
-      logQueue: customLogsQueue,
-      currentIndex: 0,
-      currentDoc: customDoc,
-      isUploading: true
-    };
-
-    setActiveScenarioId(customDoc.id);
-    setActiveDoc({
-      ...customDoc,
-      status: 'processing'
-    });
-    setLogs([initialLog]);
     setStatus('uploading');
+    setUploadProgress(15);
+    setLogs([
+      {
+        id: 'ingestion-init',
+        stage: 'received',
+        message: `Uploading "${cleanFileName}" to verification API...`,
+        timestamp: formatLogTimestamp(),
+        level: 'info',
+      },
+    ]);
+
+    try {
+      setUploadProgress(45);
+      const result = await verifyDocument(file);
+      setUploadProgress(85);
+      setStatus('processing');
+
+      let identityMessage = 'Identity registry check skipped (no document ID extracted).';
+      if (result.ocr.fields.document_id) {
+        try {
+          const identity = await validateIdentity({
+            document_id: result.ocr.fields.document_id,
+            name: result.ocr.fields.name,
+            date_of_birth: result.ocr.fields.date_of_birth,
+          });
+          identityMessage = identity.message;
+        } catch {
+          identityMessage = 'Identity registry lookup failed or record not found.';
+        }
+      }
+
+      const finalStatus = mapApiStatus(result.status);
+      const ocrConfidence = result.ocr.ocr_confidence;
+      const forgeryScore = result.forgery.forgery_score;
+      const structuralOk = result.forgery.layout.structural_integrity;
+      const isAadhaar = result.document_type === 'aadhaar';
+      const docType: KYCDocument['type'] = isAadhaar
+        ? 'aadhaar'
+        : isPDF
+          ? 'utility_bill'
+          : 'passport';
+
+      const customDoc: KYCDocument = {
+        id: result.verification_id,
+        type: docType,
+        name: cleanFileName,
+        url: docType,
+        status: finalStatus,
+        boundingBoxes: isPDF
+          ? MOCK_DOCUMENTS.utility_bill.boundingBoxes
+          : MOCK_DOCUMENTS.passport.boundingBoxes,
+        extractedFields: [
+          ...(result.ocr.fields.name
+            ? [{ key: 'name', label: 'Name', value: result.ocr.fields.name, confidence: ocrConfidence }]
+            : []),
+          ...(result.ocr.fields.date_of_birth
+            ? [
+                {
+                  key: 'dob',
+                  label: 'Date of Birth',
+                  value: result.ocr.fields.date_of_birth,
+                  confidence: ocrConfidence,
+                },
+              ]
+            : []),
+          ...(result.ocr.fields.document_id
+            ? [
+                {
+                  key: 'doc_number',
+                  label: 'Document ID',
+                  value: result.ocr.fields.document_id,
+                  confidence: ocrConfidence,
+                },
+              ]
+            : []),
+        ],
+        safetyIndicators: [
+          {
+            id: 'api-layout',
+            name: 'Layout Template Match',
+            status: structuralOk ? 'PASSED' : 'FAILED',
+            details: `Layout match score: ${(result.forgery.layout.layout_match_score * 100).toFixed(1)}%`,
+            score: result.forgery.layout.layout_match_score * 100,
+          },
+          {
+            id: 'api-forgery',
+            name: 'Forgery Risk Score',
+            status: result.forgery.is_suspected_fake ? 'SUSPECTED TAMPERING' : 'PASSED',
+            details: `Composite forgery score: ${(forgeryScore * 100).toFixed(1)}%`,
+            score: (1 - forgeryScore) * 100,
+          },
+        ],
+      };
+
+      const apiLogs: ProcessingLog[] = [
+        {
+          id: 'log-api-1',
+          stage: 'received',
+          message: `File ingested. Verification ID: ${result.verification_id}`,
+          timestamp: formatLogTimestamp(),
+          level: 'success',
+        },
+        {
+          id: 'log-api-2',
+          stage: 'ocr',
+          message: `OCR confidence: ${ocrConfidence.toFixed(1)}%. Raw: ${result.ocr.raw_text_snippet.slice(0, 120)}...`,
+          timestamp: formatLogTimestamp(),
+          level: ocrConfidence >= 70 ? 'success' : 'warning',
+        },
+        {
+          id: 'log-api-3',
+          stage: 'forgery',
+          message: `Forgery score: ${(forgeryScore * 100).toFixed(1)}%. Structural integrity: ${structuralOk ? 'PASS' : 'FAIL'}`,
+          timestamp: formatLogTimestamp(),
+          level: result.forgery.is_suspected_fake ? 'error' : 'success',
+        },
+        {
+          id: 'log-api-4',
+          stage: 'biometrics',
+          message: identityMessage,
+          timestamp: formatLogTimestamp(),
+          level: 'info',
+        },
+        {
+          id: 'log-api-5',
+          stage: 'final',
+          message: isAadhaar
+            ? `Aadhaar verdict: ${result.status.toUpperCase()}. UID checksum: ${
+                result.aadhaar_checksum_valid ? 'VALID' : 'UNCONFIRMED'
+              }. ${result.status === 'pending_review' ? 'Retake photo without glare for full name/DOB match.' : ''}`
+            : `API verdict: ${result.status.toUpperCase()} (${result.processing_time_ms}ms)`,
+          timestamp: formatLogTimestamp(),
+          level: finalStatus === 'success' ? 'success' : finalStatus === 'warning' ? 'warning' : 'error',
+        },
+      ];
+
+      setUploadProgress(100);
+      setActiveScenarioId(customDoc.id);
+      setActiveDoc(customDoc);
+      setLogs(apiLogs);
+      setStatus(finalStatus);
+
+      const metricsData = await fetchDashboardMetrics();
+      setMetrics({
+        totalProcessed: metricsData.total_processed,
+        approvalRate: metricsData.approval_rate_percent,
+        activeFraudAlerts: metricsData.total_flagged,
+        avgProcessingTimeSec: Math.max(2.5, result.processing_time_ms / 1000),
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'API verification failed';
+      setApiError(message);
+      setStatus('failed');
+      setUploadProgress(0);
+      setLogs((prev) => [
+        ...prev,
+        {
+          id: 'log-api-err',
+          stage: 'final',
+          message: `API error: ${message}. Ensure backend is running on port 8000.`,
+          timestamp: formatLogTimestamp(),
+          level: 'error',
+        },
+      ]);
+    }
   };
 
   // Toggle Play/Pause state during simulation runs
@@ -277,13 +381,35 @@ export default function Home() {
     setSimulationSpeed(speedVal);
   };
 
-  // Automatically trigger first passport scan scenario on initial render for premium look!
   useEffect(() => {
-    const startupTimer = setTimeout(() => {
-      handleSelectTemplate('passport');
-    }, 800);
-    return () => clearTimeout(startupTimer);
+    setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    (async () => {
+      try {
+        await checkApiHealth();
+        setApiConnected(true);
+        const dashboard = await fetchDashboardMetrics();
+        setMetrics({
+          totalProcessed: dashboard.total_processed,
+          approvalRate: dashboard.approval_rate_percent,
+          activeFraudAlerts: dashboard.total_flagged,
+          avgProcessingTimeSec: MOCK_METRICS.avgProcessingTimeSec,
+        });
+      } catch {
+        setApiConnected(false);
+      }
+    })();
+  }, [mounted]);
+
+  // Auto-demo scenario only after client mount (avoids hydration issues)
+  useEffect(() => {
+    if (!mounted) return;
+    const startupTimer = setTimeout(() => handleSelectTemplate('passport'), 800);
+    return () => clearTimeout(startupTimer);
+  }, [mounted]);
 
   return (
     <div className="flex-1 bg-[#030712] text-slate-100 flex flex-col min-h-screen">
@@ -309,12 +435,28 @@ export default function Home() {
             <span className="font-mono text-[10px]">OCR ENGINE: ACTIVE</span>
           </div>
           <div className="hidden sm:flex items-center space-x-2">
-            <Server className="w-3.5 h-3.5 text-slate-500" />
-            <span className="font-mono text-[10px]">API VERIFY: CONNECTED</span>
+            <Server className={`w-3.5 h-3.5 ${apiConnected ? 'text-emerald-400' : 'text-rose-400'}`} />
+            <span className={`font-mono text-[10px] ${apiConnected ? 'text-emerald-400' : 'text-rose-400'}`}>
+              API VERIFY: {apiConnected ? 'CONNECTED' : 'OFFLINE'}
+            </span>
           </div>
-          <div className="flex items-center space-x-2 bg-emerald-500/5 px-2.5 py-1 rounded-full border border-emerald-500/15">
-            <Activity className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-            <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">SYSTEMS NORMAL</span>
+          <div
+            className={`flex items-center space-x-2 px-2.5 py-1 rounded-full border ${
+              apiConnected
+                ? 'bg-emerald-500/5 border-emerald-500/15'
+                : 'bg-amber-500/5 border-amber-500/15'
+            }`}
+          >
+            <Activity
+              className={`w-3.5 h-3.5 animate-pulse ${apiConnected ? 'text-emerald-400' : 'text-amber-400'}`}
+            />
+            <span
+              className={`text-[10px] font-bold uppercase tracking-wider ${
+                apiConnected ? 'text-emerald-400' : 'text-amber-400'
+              }`}
+            >
+              {apiConnected ? 'SYSTEMS NORMAL' : 'DEMO MODE'}
+            </span>
           </div>
         </div>
       </header>
@@ -374,6 +516,13 @@ export default function Home() {
             onSpeedChange={handleSpeedChange}
           />
         </div>
+
+        {apiError && (
+          <div className="mb-4 flex items-center gap-2 rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs text-rose-300">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{apiError}</span>
+          </div>
+        )}
 
         {/* Security Warning Footnote */}
         <footer className="mt-8 border-t border-slate-900 pt-6 flex flex-col md:flex-row items-center justify-between text-[11px] text-slate-500 gap-4">

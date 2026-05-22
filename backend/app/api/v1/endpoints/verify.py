@@ -4,7 +4,7 @@ from app.api.deps import get_app_settings
 from app.core.config import Settings
 from app.core.exceptions import KYCBaseError, to_http_exception
 from app.models.schemas import VerifyDocumentResponse
-from app.services.verification import run_verification_pipeline
+from app.services.verification_pipeline import verify_document as run_verification_pipeline
 
 router = APIRouter()
 
@@ -21,6 +21,6 @@ async def verify_document(
     try:
         content = await file.read()
         content_type = file.content_type or "application/octet-stream"
-        return await run_verification_pipeline(content, content_type, settings)
+        return await run_verification_pipeline(content, content_type, file.filename)
     except KYCBaseError as exc:
         raise to_http_exception(exc) from exc

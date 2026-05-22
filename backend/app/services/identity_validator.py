@@ -5,15 +5,24 @@ from __future__ import annotations
 import re
 
 from app.core.exceptions import IdentityNotFoundError
-from app.models.schemas import FieldMatchDetail, ValidateIdentityRequest, ValidateIdentityResponse
-from app.registry.mock_registry import lookup_by_document_id
-from app.services.metrics_store import metrics_store
+from app.core.metrics_store import metrics_store
+from app.models.schemas import FieldMatchDetail, IdentityValidationRequest, IdentityValidationResponse
+from app.registry.mock_registry import lookup_identity
 
 
 def _normalize(value: str | None) -> str:
     if not value:
         return ""
     return re.sub(r"\s+", " ", value.strip().upper())
+
+
+def _normalize_dob(value: str | None) -> str:
+    if not value:
+        return ""
+    v = value.strip()
+    if re.match(r"\d{2}/\d{2}/\d{4}", v):
+        return v
+    return _normalize(v)
 
 
 def _similarity(a: str, b: str) -> float:
@@ -23,7 +32,6 @@ def _similarity(a: str, b: str) -> float:
         return 0.0
     if a == b:
         return 100.0
-    # Token overlap ratio
     tokens_a = set(a.split())
     tokens_b = set(b.split())
     if not tokens_a or not tokens_b:
@@ -32,21 +40,20 @@ def _similarity(a: str, b: str) -> float:
     return round(overlap * 100.0, 2)
 
 
-async def validate_identity(request: ValidateIdentityRequest) -> ValidateIdentityResponse:
-    record = lookup_by_document_id(request.document_id)
+def validate_identity(request: IdentityValidationRequest) -> IdentityValidationResponse:
+    record = lookup_identity(request.document_id)
     if record is None:
-        await metrics_store.record_identity_miss()
         raise IdentityNotFoundError(
             f"No registry entry for document_id '{request.document_id}'."
         )
 
     extracted_name = _normalize(request.name)
-    extracted_dob = _normalize(request.date_of_birth)
+    extracted_dob = _normalize_dob(request.date_of_birth)
     registry_name = _normalize(record.name)
-    registry_dob = _normalize(record.date_of_birth)
+    registry_dob = _normalize_dob(record.date_of_birth)
 
-    name_match_conf = _similarity(extracted_name, registry_name)
-    dob_match_conf = _similarity(extracted_dob, registry_dob)
+    name_conf = _similarity(extracted_name, registry_name)
+    dob_conf = _similarity(extracted_dob, registry_dob)
 
     field_matches = [
         FieldMatchDetail(
@@ -54,42 +61,61 @@ async def validate_identity(request: ValidateIdentityRequest) -> ValidateIdentit
             extracted_value=request.document_id,
             registry_value=record.document_id,
             match=True,
-            match_confidence=100.0,
+            confidence=100.0,
         ),
         FieldMatchDetail(
             field="name",
             extracted_value=request.name,
             registry_value=record.name,
-            match=name_match_conf >= 80.0,
-            match_confidence=name_match_conf,
+            match=name_conf >= 75.0,
+            confidence=name_conf,
         ),
         FieldMatchDetail(
             field="date_of_birth",
             extracted_value=request.date_of_birth,
             registry_value=record.date_of_birth,
-            match=dob_match_conf >= 85.0,
-            match_confidence=dob_match_conf,
+            match=dob_conf >= 80.0,
+            confidence=dob_conf,
         ),
     ]
 
-    flags: list[str] = []
-    if record.status == "pending_review":
-        flags.append("Registry record is pending manual review.")
-    if name_match_conf < 80.0:
-        flags.append("Name mismatch against core registry.")
-    if dob_match_conf < 85.0:
-        flags.append("Date of birth mismatch against core registry.")
-
-    overall = sum(f.match_confidence for f in field_matches) / len(field_matches)
+    registry_match_score = round(
+        sum(f.confidence for f in field_matches) / len(field_matches),
+        2,
+    )
+    is_aadhaar = len(re.sub(r"\D", "", request.document_id)) == 12
     identity_verified = all(f.match for f in field_matches) and record.status == "active"
 
-    response = ValidateIdentityResponse(
-        registry_id=record.registry_id,
-        identity_verified=identity_verified,
-        overall_match_confidence=round(overall, 2),
-        field_matches=field_matches,
-        flags=flags,
-    )
+    if is_aadhaar and field_matches[0].match and record.status == "active":
+        # Aadhaar number matched registry — valid UID even if glare blocked name/DOB OCR
+        identity_verified = True
+        if name_conf < 75.0 or dob_conf < 80.0:
+            message = (
+                "Aadhaar number verified in registry (UID valid). "
+                "Name/DOB could not be confirmed from this photo — upload a flat, glare-free scan for full match."
+            )
+        else:
+            message = "Aadhaar identity fully verified against core registry."
+    elif identity_verified:
+        message = "Identity verified against core registry."
+    else:
+        parts = []
+        if name_conf < 75.0:
+            parts.append("name mismatch")
+        if dob_conf < 80.0:
+            parts.append("DOB mismatch")
+        message = (
+            "Identity could not be fully verified: " + ", ".join(parts)
+            if parts
+            else "Manual review required."
+        )
 
-    await metrics_store.record_identity_validation(identity_verified)
-    return response
+    metrics_store.record_identity_check(matched=identity_verified)
+
+    return IdentityValidationResponse(
+        document_id=request.document_id,
+        identity_verified=identity_verified,
+        registry_match_score=registry_match_score,
+        field_matches=field_matches,
+        message=message,
+    )

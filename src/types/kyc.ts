@@ -29,7 +29,7 @@ export interface SafetyIndicator {
 
 export interface KYCDocument {
   id: string;
-  type: 'passport' | 'license' | 'utility_bill';
+  type: 'passport' | 'license' | 'utility_bill' | 'aadhaar';
   name: string;
   url: string; // fallback mock or user-uploaded base64/objectURL
   status: VerificationStatus;

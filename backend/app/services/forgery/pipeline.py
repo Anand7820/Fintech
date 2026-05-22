@@ -14,7 +14,7 @@ def run_forgery_pipeline(
     raw_text: str = "",
 ) -> ForgeryAnalysis:
     """Execute layout, metadata, and ELA forgery checks; aggregate forgery_score."""
-    layout = analyze_layout(image_bgr, settings)
+    layout = analyze_layout(image_bgr, settings, raw_text=raw_text)
     metadata = analyze_metadata(image_bgr, raw_text=raw_text)
     ela = analyze_ela(image_bgr, settings)
 

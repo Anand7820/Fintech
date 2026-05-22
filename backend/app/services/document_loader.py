@@ -6,7 +6,12 @@ import cv2
 import numpy as np
 
 from app.core.exceptions import InvalidDocumentError
-from app.services.ocr import bytes_to_bgr
+def bytes_to_bgr(content: bytes) -> np.ndarray:
+    nparr = np.frombuffer(content, np.uint8)
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    if img is None:
+        raise InvalidDocumentError("Could not decode image bytes")
+    return img
 
 
 def _pdf_first_page_to_bgr(pdf_bytes: bytes) -> np.ndarray:

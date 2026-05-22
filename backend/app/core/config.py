@@ -32,9 +32,9 @@ class Settings(BaseSettings):
     templates_dir: Path = Path(__file__).resolve().parents[1] / "assets" / "templates"
     upload_temp_dir: Path = Path(__file__).resolve().parents[2] / "tmp" / "uploads"
 
-    # OCR
-    tesseract_cmd: str | None = None
-    ocr_lang: str = "eng"
+    # OCR (Homebrew default on Apple Silicon macOS)
+    tesseract_cmd: str | None = "/opt/homebrew/bin/tesseract"
+    ocr_lang: str = "eng+hin"
 
 
 @lru_cache
