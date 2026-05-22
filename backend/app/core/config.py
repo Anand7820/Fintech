@@ -1,3 +1,4 @@
+import tempfile
 from functools import lru_cache
 from pathlib import Path
 
@@ -30,7 +31,7 @@ class Settings(BaseSettings):
     forgery_alert_threshold: float = 0.50
 
     templates_dir: Path = Path(__file__).resolve().parents[1] / "assets" / "templates"
-    upload_temp_dir: Path = Path(__file__).resolve().parents[2] / "tmp" / "uploads"
+    upload_temp_dir: Path = Path(tempfile.gettempdir()) / "kyc_uploads"
 
     # OCR (Homebrew default on Apple Silicon macOS)
     tesseract_cmd: str | None = "/opt/homebrew/bin/tesseract"

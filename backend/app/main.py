@@ -13,8 +13,11 @@ from app.core.exceptions import KYCBaseError, to_http_exception
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     settings = get_settings()
-    settings.upload_temp_dir.mkdir(parents=True, exist_ok=True)
-    settings.templates_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        settings.upload_temp_dir.mkdir(parents=True, exist_ok=True)
+        settings.templates_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as e:
+        print(f"Warning: Could not create directories (read-only filesystem): {e}")
     yield
 
 
