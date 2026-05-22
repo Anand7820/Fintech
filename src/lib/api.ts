@@ -1,6 +1,6 @@
 const isProd = process.env.NODE_ENV === 'production';
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ?? (isProd ? '/_/backend' : 'http://127.0.0.1:8000');
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ?? (isProd ? '' : 'http://127.0.0.1:8000');
 
 export type ApiHealth = {
   status: string;
