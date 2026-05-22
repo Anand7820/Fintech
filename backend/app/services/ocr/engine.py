@@ -12,13 +12,17 @@ from app.core.config import Settings
 from app.core.exceptions import OCRProcessingError
 from app.models.schemas import ExtractedFields
 from app.core.exceptions import ScreenshotUploadError
-from app.services.aadhaar_ocr import (
+from .aadhaar import (
     extract_aadhaar_fields,
     is_dashboard_screenshot_text,
     is_plausible_person_name,
 )
-from app.services.passport_ocr import extract_passport_fields
+from .license import extract_license_fields
+from .pan import extract_pan_fields
+from .passport import extract_passport_fields
 from app.utils.aadhaar import extract_aadhaar_number, is_aadhaar_document
+from app.utils.license_doc import is_license_document
+from app.utils.pan import is_pan_document
 from app.utils.passport import is_blocked_passport_name, is_passport_document
 
 try:
@@ -96,7 +100,7 @@ def _extract_text_heuristic(gray: np.ndarray) -> tuple[str, float]:
 def run_ocr(image_bgr: np.ndarray, settings: Settings) -> tuple[ExtractedFields, float, str, str]:
     """
     Returns (fields, ocr_confidence, raw_text, document_type).
-    document_type: aadhaar | passport | license | utility_bill | unknown
+    document_type: aadhaar | passport | pan | license | utility_bill | unknown
     """
     gray = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2GRAY)
 
@@ -118,11 +122,40 @@ def run_ocr(image_bgr: np.ndarray, settings: Settings) -> tuple[ExtractedFields,
             code="screenshot_not_document",
         )
 
-    # Passport before Aadhaar — both can contain "India" and long digit strings
+    doc_type = detect_document_type(raw_text)
+
+    if doc_type == "pan" or (is_pan_document(raw_text) and not is_aadhaar_document(raw_text)):
+        doc_type = "pan"
+        try:
+            fields, ocr_confidence, raw_text = extract_pan_fields(
+                image_bgr, settings, fallback_text=raw_text
+            )
+        except ValueError as exc:
+            if str(exc) == "uploaded_image_looks_like_app_screenshot":
+                raise ScreenshotUploadError(
+                    "Upload a photo of your physical PAN card, not a screenshot of this verification screen.",
+                    code="screenshot_not_document",
+                ) from exc
+            raise
+        return fields, ocr_confidence, raw_text, doc_type
+
+    if doc_type == "license" or is_license_document(raw_text):
+        doc_type = "license"
+        try:
+            fields, ocr_confidence, raw_text = extract_license_fields(
+                image_bgr, settings, fallback_text=raw_text
+            )
+        except ValueError as exc:
+            if str(exc) == "uploaded_image_looks_like_app_screenshot":
+                raise ScreenshotUploadError(
+                    "Upload a photo of your physical driver's license, not a screenshot of this screen.",
+                    code="screenshot_not_document",
+                ) from exc
+            raise
+        return fields, ocr_confidence, raw_text, doc_type
+
     if is_passport_document(raw_text):
         doc_type = "passport"
-    else:
-        doc_type = detect_document_type(raw_text)
 
     if doc_type == "passport":
         doc_type = "passport"
@@ -168,10 +201,14 @@ def _looks_like_aadhaar_image(image_bgr: np.ndarray) -> bool:
 
 
 def detect_document_type(raw_text: str) -> str:
-    if is_passport_document(raw_text):
-        return "passport"
     if is_aadhaar_document(raw_text):
         return "aadhaar"
+    if is_pan_document(raw_text):
+        return "pan"
+    if is_passport_document(raw_text):
+        return "passport"
+    if is_license_document(raw_text):
+        return "license"
     upper = raw_text.upper()
     if re.search(r"\b[A-Z]{5}\d{4}[A-Z]\b", upper) or "INCOME TAX" in upper or "PERMANENT ACCOUNT" in upper:
         return "pan"

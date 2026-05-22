@@ -9,7 +9,7 @@ import numpy as np
 
 from app.core.config import Settings
 from app.models.schemas import ExtractedFields
-from app.services.aadhaar_ocr import is_dashboard_screenshot_text, is_plausible_person_name
+from .aadhaar import is_dashboard_screenshot_text, is_plausible_person_name
 from app.utils.passport import (
     combine_passport_name,
     extract_passport_number,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { KYCDocument, BoundingBox } from '@/types/kyc';
+import { KYCDocument } from '@/types/kyc';
 import { isFieldInRegion } from '@/lib/aadhaarRegions';
 import { BadgeCheck, ShieldAlert, ShieldX, FileSearch, Crosshair, UserCheck } from 'lucide-react';
 
@@ -16,6 +16,7 @@ export const SplitScreenWorkflow: React.FC<SplitScreenWorkflowProps> = ({ docume
   // Simulate OCR text typing reveal when loading/processing starts
   useEffect(() => {
     if (status === 'processing') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRevealedFields({});
     } else if (status === 'success' || status === 'warning' || status === 'failed') {
       if (document) {
@@ -102,6 +103,7 @@ export const SplitScreenWorkflow: React.FC<SplitScreenWorkflowProps> = ({ docume
                 maxWidth: '100%',
               }}
             >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={document.previewUrl}
                 alt="Uploaded document"
@@ -187,7 +189,7 @@ export const SplitScreenWorkflow: React.FC<SplitScreenWorkflowProps> = ({ docume
               <text x="230" y="218" fill="#e2e8f0" fontSize="12" fontWeight="bold">UNITED STATES OF AMERICA</text>
               <text x="230" y="250" fill="#324467" fontSize="10">Date of birth / Date de naissance</text>
               <text x="230" y="268" fill="#e2e8f0" fontSize="12" fontWeight="bold">14 OCT 1992</text>
-              <text x="440" y="250" fill="#324467" fontSize="10">Date of expiry / Date d'expiration</text>
+              <text x="440" y="250" fill="#324467" fontSize="10">Date of expiry / Date d&apos;expiration</text>
               <text x="440" y="268" fill="#e2e8f0" fontSize="12" fontWeight="bold">18 FEB 2032</text>
               {/* MRZ Zone */}
               <rect x="30" y="325" width="572" height="50" rx="4" fill="#0c111e"/>
@@ -365,7 +367,10 @@ export const SplitScreenWorkflow: React.FC<SplitScreenWorkflowProps> = ({ docume
               <div className="space-y-3">
                 {document.extractedFields.map((field) => {
                   const isHovered =
-                    document.type === 'aadhaar' || document.type === 'passport'
+                    document.type === 'aadhaar' ||
+                    document.type === 'passport' ||
+                    document.type === 'pan' ||
+                    document.type === 'license'
                       ? isFieldInRegion(field.key, hoveredField)
                       : hoveredField === field.key;
                   const isRevealed = revealedFields[field.key] || false;

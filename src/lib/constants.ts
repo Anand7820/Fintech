@@ -72,6 +72,30 @@ export const MOCK_DOCUMENTS: Record<string, KYCDocument> = {
       { id: 'ind-8', name: 'Cross-Database Validation', status: 'FAILED', details: 'Date of birth does not match CA DMV records for license DL88210344.' },
     ]
   },
+  pan: {
+    id: 'doc-pan-template',
+    type: 'pan',
+    name: 'PAN Card',
+    url: 'pan',
+    status: 'success',
+    boundingBoxes: [
+      { label: 'Photo', x: 4, y: 12, width: 20, height: 58, fieldKey: 'portrait' },
+      { label: 'Name', x: 24, y: 14, width: 72, height: 14, fieldKey: 'name' },
+      { label: "Father's Name", x: 24, y: 30, width: 72, height: 12, fieldKey: 'given_names' },
+      { label: 'Date of Birth', x: 24, y: 44, width: 38, height: 10, fieldKey: 'dob' },
+      { label: 'PAN Number', x: 24, y: 58, width: 72, height: 14, fieldKey: 'doc_number' },
+    ],
+    extractedFields: [
+      { key: 'name', label: 'Full Name', value: 'Rajesh Kumar Sharma', confidence: 96, isMatch: true },
+      { key: 'given_names', label: "Father's Name", value: 'Kumar Sharma', confidence: 94, isMatch: true },
+      { key: 'dob', label: 'Date of Birth', value: '15/08/1985', confidence: 95, isMatch: true },
+      { key: 'doc_number', label: 'PAN Number', value: 'ABCPK 1234 F', confidence: 99, isMatch: true },
+    ],
+    safetyIndicators: [
+      { id: 'pan-1', name: 'PAN Format Validation', status: 'PASSED', details: 'Valid 10-character PAN structure.', score: 100 },
+      { id: 'pan-2', name: 'Income Tax Registry', status: 'PASSED', details: 'PAN verified against mock registry.', score: 98 },
+    ],
+  },
   aadhaar: {
     id: 'doc-aadhaar-template',
     type: 'aadhaar',

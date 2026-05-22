@@ -53,6 +53,13 @@ MOCK_IDENTITY_REGISTRY: dict[str, RegistryRecord] = {
         nationality="IND",
         status="active",
     ),
+    "ABCPK1234F": RegistryRecord(
+        document_id="ABCPK1234F",
+        name="Rajesh Kumar Sharma",
+        date_of_birth="15/08/1985",
+        nationality="IND",
+        status="active",
+    ),
 }
 
 

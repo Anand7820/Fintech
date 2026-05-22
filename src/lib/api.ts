@@ -43,6 +43,7 @@ export type VerifyDocumentApiResponse = {
       surname?: string | null;
       given_names?: string | null;
       date_of_birth: string | null;
+      expiry_date?: string | null;
       document_id: string | null;
       nationality?: string | null;
     };

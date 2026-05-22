@@ -18,6 +18,8 @@ def analyze_layout(
     Uses normalized cross-correlation on edge maps.
     """
     from app.utils.aadhaar import is_aadhaar_document
+    from app.utils.license_doc import is_license_document
+    from app.utils.pan import is_pan_document
     from app.utils.passport import is_passport_document
 
     if raw_text and is_aadhaar_document(raw_text):
@@ -31,6 +33,20 @@ def analyze_layout(
         return LayoutAnalysis(
             template_matched="passport",
             layout_match_score=0.80,
+            structural_integrity=True,
+        )
+
+    if raw_text and is_pan_document(raw_text):
+        return LayoutAnalysis(
+            template_matched="pan",
+            layout_match_score=0.79,
+            structural_integrity=True,
+        )
+
+    if raw_text and is_license_document(raw_text):
+        return LayoutAnalysis(
+            template_matched="drivers_license",
+            layout_match_score=0.78,
             structural_integrity=True,
         )
 
@@ -82,6 +98,7 @@ def _synthetic_templates() -> dict[str, np.ndarray]:
     specs = {
         "passport": (400, 250),
         "drivers_license": (400, 250),
+        "pan": (250, 400),
         "utility_bill": (400, 280),
         "aadhaar": (500, 320),
     }

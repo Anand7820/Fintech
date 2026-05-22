@@ -13,7 +13,7 @@ import numpy as np
 
 from app.core.config import Settings
 from app.models.schemas import DetectedRegion, ExtractedFields
-from app.services.aadhaar_ocr import is_plausible_person_name
+from app.services.ocr.aadhaar import is_plausible_person_name
 from app.services.document_layout import (
     detect_document_bounds,
     get_layout_zones,
@@ -227,12 +227,20 @@ def _layout_regions(
         return []
 
     doc_x, doc_y, doc_w, doc_h = detect_document_bounds(image_bgr)
+    doc_labels = {
+        "aadhaar": "Aadhaar Number",
+        "passport": "Passport Number",
+        "pan": "PAN Number",
+        "license": "License Number",
+    }
     labels = {
         "portrait": "Photo",
         "name": "Name",
         "dob": "Date of Birth",
         "gender": "Gender",
-        "doc_number": "Aadhaar Number" if document_type == "aadhaar" else "Passport Number",
+        "doc_number": doc_labels.get(document_type, "Document ID"),
+        "father_name": "Father's Name",
+        "expiry": "Expiry Date",
         "qr_code": "QR Code",
         "mrz": "Machine Readable Zone",
     }
@@ -255,12 +263,25 @@ def _layout_regions(
         "name": fields.name if is_plausible_person_name(fields.name) else None,
         "dob": fields.date_of_birth,
         "doc_number": fields.document_id,
+        "father_name": fields.given_names,
+        "expiry": fields.expiry_date,
+    }
+
+    field_keys = {
+        "father_name": "given_names",
+        "expiry": "expiry_date",
     }
 
     for key, zone in zones.items():
         if key == "qr_code" and document_type != "aadhaar":
             continue
         if key == "mrz" and document_type != "passport":
+            continue
+        if key == "gender" and document_type not in ("aadhaar",):
+            continue
+        if key == "father_name" and document_type != "pan":
+            continue
+        if key == "expiry" and document_type != "license":
             continue
         pct = zone_in_document_bounds(zone, doc_x, doc_y, doc_w, doc_h, img_w, img_h)
         if key == "portrait" and faces:
@@ -274,7 +295,7 @@ def _layout_regions(
                 pct = refined
         regions.append(
             DetectedRegion(
-                field_key=key if key != "doc_number" else "doc_number",
+                field_key=field_keys.get(key, key),
                 label=f"{labels.get(key, key)} (on card)",
                 x=pct[0],
                 y=pct[1],
@@ -300,7 +321,7 @@ def detect_field_regions(
 
     faces = _detect_faces(image_bgr)
 
-    if document_type in ("aadhaar", "passport"):
+    if document_type in ("aadhaar", "passport", "pan", "license"):
         layout = _layout_regions(
             image_bgr, document_type, fields, words, faces=faces
         )

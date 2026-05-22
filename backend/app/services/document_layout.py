@@ -26,6 +26,24 @@ PASSPORT_ZONES: dict[str, tuple[float, float, float, float]] = {
     "mrz": (2.0, 82.0, 96.0, 16.0),
 }
 
+# Indian PAN — landscape card
+PAN_ZONES: dict[str, tuple[float, float, float, float]] = {
+    "portrait": (4.0, 12.0, 20.0, 58.0),
+    "name": (24.0, 14.0, 72.0, 14.0),
+    "father_name": (24.0, 30.0, 72.0, 12.0),
+    "dob": (24.0, 44.0, 38.0, 10.0),
+    "doc_number": (24.0, 58.0, 72.0, 14.0),
+}
+
+# Driver's license — horizontal card
+LICENSE_ZONES: dict[str, tuple[float, float, float, float]] = {
+    "portrait": (4.0, 18.0, 28.0, 58.0),
+    "name": (34.0, 18.0, 60.0, 16.0),
+    "dob": (34.0, 36.0, 38.0, 12.0),
+    "doc_number": (34.0, 50.0, 52.0, 12.0),
+    "expiry": (34.0, 64.0, 38.0, 12.0),
+}
+
 
 def detect_document_bounds(image_bgr: np.ndarray) -> tuple[int, int, int, int]:
     """
@@ -89,4 +107,8 @@ def get_layout_zones(document_type: str) -> dict[str, tuple[float, float, float,
         return PASSPORT_ZONES
     if document_type == "aadhaar":
         return AADHAAR_ZONES
+    if document_type == "pan":
+        return PAN_ZONES
+    if document_type == "license":
+        return LICENSE_ZONES
     return {}

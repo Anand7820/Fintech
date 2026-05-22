@@ -246,7 +246,7 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
                 <IdCard className="w-4 h-4" />
               </div>
               <div>
-                <div className="text-xs font-bold text-slate-200">Driver's License</div>
+                <div className="text-xs font-bold text-slate-200">Driver&apos;s License</div>
                 <div className="text-[10px] text-slate-400">Suspected date tampering</div>
               </div>
             </div>

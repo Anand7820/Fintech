@@ -10,14 +10,14 @@ from app.core.config import get_settings
 from app.core.exceptions import InvalidDocumentError, ScreenshotUploadError
 from app.models.schemas import FieldMatchDetail, IdentityValidationRequest
 from app.registry.mock_registry import lookup_identity
-from app.services.aadhaar_ocr import is_plausible_person_name, name_similarity
+from app.services.ocr.aadhaar import is_plausible_person_name, name_similarity
 from app.services.identity_validator import validate_identity
 from app.services.field_detection import detect_field_regions
 from app.core.metrics_store import metrics_store
 from app.models.schemas import OCRResult, VerifyDocumentResponse
 from app.services.document_loader import load_document_bgr
 from app.services.forgery.pipeline import run_forgery_pipeline
-from app.services.ocr_engine import run_ocr
+from app.services.ocr.engine import run_ocr
 from app.services.preprocessing import preprocess_document
 from app.utils.aadhaar import extract_aadhaar_number, is_aadhaar_document, verhoeff_valid
 from app.utils.passport import is_passport_document
@@ -56,6 +56,24 @@ def _determine_status(
         if identity_verified and has_document_id and forgery_score < settings.forgery_alert_threshold:
             return "verified"
         if has_document_id and has_name and name_plausible and ocr_confidence >= 42.0:
+            return "pending_review"
+        if has_document_id or has_name:
+            return "pending_review"
+        return "flagged"
+
+    if document_type == "pan":
+        if identity_verified and has_document_id and forgery_score < settings.forgery_alert_threshold:
+            return "verified"
+        if has_document_id and name_plausible and ocr_confidence >= 45.0:
+            return "pending_review"
+        if has_document_id or has_name:
+            return "pending_review"
+        return "flagged"
+
+    if document_type == "license":
+        if identity_verified and has_document_id and forgery_score < settings.forgery_alert_threshold:
+            return "verified"
+        if has_document_id and has_name and name_plausible:
             return "pending_review"
         if has_document_id or has_name:
             return "pending_review"

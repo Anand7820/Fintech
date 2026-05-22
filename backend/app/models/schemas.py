@@ -16,6 +16,7 @@ class ExtractedFields(BaseModel):
     surname: str | None = None
     given_names: str | None = None
     date_of_birth: str | None = None
+    expiry_date: str | None = None
     document_id: str | None = None
     nationality: str | None = None
 

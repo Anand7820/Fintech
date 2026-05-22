@@ -66,6 +66,8 @@ curl "http://localhost:8000/api/v1/dashboard-metrics"
 - `DL88210344` — Marcus Aurelius
 - `99887766551` — Robert Johnson
 - `P12345678` — Jane Doe
+- `ABCPK1234F` — Rajesh Kumar Sharma (PAN)
+- `DL88210344` — Marcus Aurelius (Driver's License)
 
 ## Project layout
 
