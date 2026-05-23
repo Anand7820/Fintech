@@ -256,10 +256,11 @@ export function useKYCWorkflow() {
         name: result.ocr.fields.name || cleanFileName,
         url: docType,
         previewUrl,
+        mimeType: file.type,
         imageWidth: result.preprocessing?.output_width,
         imageHeight: result.preprocessing?.output_height,
         status: finalStatus,
-        boundingBoxes: autoBoxes.length > 0 ? autoBoxes : (isAadhaar ? MOCK_DOCUMENTS.aadhaar.boundingBoxes : isPan ? MOCK_DOCUMENTS.passport.boundingBoxes : isLicense ? MOCK_DOCUMENTS.license.boundingBoxes : isPDF ? MOCK_DOCUMENTS.utility_bill.boundingBoxes : MOCK_DOCUMENTS.passport.boundingBoxes),
+        boundingBoxes: autoBoxes.length > 0 ? autoBoxes : (isAadhaar ? MOCK_DOCUMENTS.aadhaar.boundingBoxes : isPan ? MOCK_DOCUMENTS.pan.boundingBoxes : isLicense ? MOCK_DOCUMENTS.license.boundingBoxes : isPDF ? MOCK_DOCUMENTS.utility_bill.boundingBoxes : MOCK_DOCUMENTS.passport.boundingBoxes),
         extractedFields,
         safetyIndicators: [
           {

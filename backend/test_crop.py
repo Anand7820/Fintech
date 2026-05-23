@@ -1,0 +1,22 @@
+import cv2
+import pytesseract
+from app.services.preprocessing import preprocess_document
+
+img_path = '/Users/anandkamble/Downloads/AnandPAN.jpeg'
+img = cv2.imread(img_path)
+
+# Apply standard preprocessing (deskew + denoise)
+processed_bgr, _ = preprocess_document(img)
+
+h, w = processed_bgr.shape[:2]
+
+# Crop details avoiding QR code (0.22 to 0.65)
+crop = processed_bgr[int(h * 0.08) : int(h * 0.92), int(w * 0.22) : int(w * 0.65)]
+
+# Single CLAHE enhancement
+gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+clahe = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(8, 8))
+enhanced = clahe.apply(gray)
+
+text = pytesseract.image_to_string(enhanced, config='--psm 6')
+print('TEXT WITHOUT QR CODE:\n', text)

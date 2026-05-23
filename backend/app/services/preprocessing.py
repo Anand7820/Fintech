@@ -10,7 +10,8 @@ def preprocess_document(image_bgr: np.ndarray) -> tuple[np.ndarray, Preprocessin
     Returns processed BGR image (for downstream OCR) and summary metrics.
     """
     gray = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2GRAY)
-    denoised = cv2.fastNlMeansDenoising(gray, None, h=10, templateWindowSize=7, searchWindowSize=21)
+    # Use h=3 instead of h=10 to preserve thin text in high-res documents like PAN cards
+    denoised = cv2.fastNlMeansDenoising(gray, None, h=3, templateWindowSize=7, searchWindowSize=21)
 
     angle, deskewed = _deskew(denoised)
     # Re-expand to 3-channel for OCR / forgery modules expecting BGR

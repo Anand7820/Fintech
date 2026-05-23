@@ -103,12 +103,19 @@ export const SplitScreenWorkflow: React.FC<SplitScreenWorkflowProps> = ({ docume
                 maxWidth: '100%',
               }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={document.previewUrl}
-                alt="Uploaded document"
-                className="absolute inset-0 w-full h-full object-contain rounded-sm"
-              />
+              {document.mimeType === 'application/pdf' ? (
+                <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-slate-900 rounded-sm border border-violet-900/40">
+                  <FileSearch className="w-16 h-16 text-violet-500/50 mb-4" />
+                  <span className="text-sm font-bold text-slate-300">PDF Document</span>
+                  <span className="text-[10px] text-slate-500 mt-2">Preview not available in browser</span>
+                </div>
+              ) : (
+                <img
+                  src={document.previewUrl}
+                  alt="Uploaded document"
+                  className="absolute inset-0 w-full h-full object-contain rounded-sm"
+                />
+              )}
               {status === 'processing' && (
                 <div className="absolute inset-0 pointer-events-none z-30 rounded-sm overflow-hidden">
                   <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-violet-400 to-transparent shadow-[0_0_15px_rgba(139,92,246,0.8)] animate-scan" />

@@ -214,7 +214,7 @@ def detect_document_type(raw_text: str) -> str:
         return "pan"
     if "PASSPORT" in upper or re.search(r"\b[A-Z]\d{7}\b", upper) or re.search(r"P<IND", upper):
         return "passport"
-    if "LICENSE" in upper or "DMV" in upper or re.search(r"\bDL\d{6}", upper):
+    if "LICENSE" in upper or "LICENCE" in upper or "DRIVING" in upper or "DMV" in upper or re.search(r"\bDL\d{6}", upper):
         return "license"
     if "UTILITY" in upper or "BILL" in upper or "STATEMENT" in upper:
         return "utility_bill"

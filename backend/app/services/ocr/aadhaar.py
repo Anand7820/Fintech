@@ -75,6 +75,7 @@ def is_plausible_person_name(name: str | None) -> bool:
         "LOGGING", "CHECKED", "MATCH", "MATEH", "INGESTION", "FORGERY",
         "TAMPER", "AUDIT", "VERTICATION", "VERTI", "ENTITY", "DECISION",
         "VERDICT", "SUCCESS", "WARNING", "FAILED", "PASSED",
+        "OON", "ARREA", "OONAH", "BIRTH", "DATE",
     }
     if any(t in bad for t in tokens):
         return False

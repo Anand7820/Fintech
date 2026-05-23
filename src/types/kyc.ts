@@ -33,6 +33,7 @@ export interface KYCDocument {
   name: string;
   url: string; // fallback mock or user-uploaded base64/objectURL
   previewUrl?: string; // blob URL of uploaded file (show real scan, not SVG mock)
+  mimeType?: string; // mime type of the uploaded file
   /** Natural pixel size of uploaded scan — keeps overlay boxes aligned */
   imageWidth?: number;
   imageHeight?: number;

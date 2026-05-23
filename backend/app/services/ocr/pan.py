@@ -41,9 +41,10 @@ def _enhance_region(crop: np.ndarray) -> np.ndarray:
         gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
     else:
         gray = crop
+    # Image is already denoised in preprocess_document; doing it again blurs the text heavily!
     if max(gray.shape[:2]) < 900:
         gray = cv2.resize(gray, None, fx=2.0, fy=2.0, interpolation=cv2.INTER_CUBIC)
-    clahe = cv2.createCLAHE(clipLimit=2.8, tileGridSize=(8, 8))
+    clahe = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(8, 8))
     return clahe.apply(gray)
 
 
@@ -63,14 +64,19 @@ def _crop_pan_regions(image_bgr: np.ndarray) -> dict[str, np.ndarray]:
         # Portrait photo of card — card usually in center
         return {
             "full": image_bgr,
-            "details": image_bgr[int(h * 0.20) : int(h * 0.85), int(w * 0.05) : int(w * 0.95)],
+            "full_no_qr": image_bgr[: int(h * 0.85), : int(w * 0.95)],
             "photo": image_bgr[int(h * 0.25) : int(h * 0.75), 0 : int(w * 0.35)],
         }
     return {
         "full": image_bgr,
-        "details": image_bgr[int(h * 0.08) : int(h * 0.92), int(w * 0.22) : int(w * 0.98)],
-        "photo": image_bgr[int(h * 0.12) : int(h * 0.88), 0 : int(w * 0.22)],
-        "number_strip": image_bgr[int(h * 0.55) : int(h * 0.92), int(w * 0.20) : int(w * 0.98)],
+        "full_no_qr": image_bgr[:, : int(w * 0.68)],
+        "details": image_bgr[
+            int(h * 0.05) : int(h * 0.95), int(w * 0.25) : int(w * 0.65)
+        ],
+        "number_strip": image_bgr[
+            int(h * 0.70) : int(h * 0.95), int(w * 0.05) : int(w * 0.95)
+        ],
+        "photo": image_bgr[int(h * 0.12) : int(h * 0.88), 0 : int(w * 0.25)],
     }
 
 
@@ -78,6 +84,7 @@ def _parse_pan_fields(text: str) -> dict[str, str | None]:
     upper = text.upper().replace("\r", "\n")
     out: dict[str, str | None] = {
         "name": None,
+        "given_names": None,
         "father_name": None,
         "date_of_birth": None,
         "pan": None,
@@ -87,32 +94,43 @@ def _parse_pan_fields(text: str) -> dict[str, str | None]:
     if pan:
         out["pan"] = format_pan_display(pan)
 
-    dob = re.search(
-        r"(?:DATE\s*OF\s*BIRTH|DOB|जन्म)[:\s/]*(\d{2}/\d{2}/\d{4})",
-        upper,
-    )
-    if not dob:
-        dob = re.search(r"\b(\d{2}/\d{2}/\d{4})\b", upper)
+    dob = re.search(r"(\d{2}[/-]\d{2}[/-]\d{4})", upper)
     if dob:
         out["date_of_birth"] = dob.group(1)
 
-    father = re.search(
-        r"FATHER(?:'S)?\s*NAME[:\s/]*\n?\s*([A-Z][A-Z\s]{2,40}?)(?:\n|DATE|PAN|$)",
-        upper,
-    )
-    if father:
-        cand = re.sub(r"\s+", " ", father.group(1)).strip()
-        if _valid_name(cand):
-            out["father_name"] = cand.title()
+    # Find all "FATHER...NAME" blocks
+    father_matches = re.finditer(r"(?:^|\n).*?FATHE?R?[^\n]*NAME[^\n]*\n([\s\S]*?)(?=\n.*?(?:DATE|BIRTH|जन्म|PAN|INCOME|GOVT|\d{2}[/-]\d{2}[/-]\d{4}|$))", upper)
+    father_candidates = []
+    for fm in father_matches:
+        valid_words = []
+        for line in fm.group(1).splitlines():
+            line = re.sub(r"[^A-Z\s]", "", line).strip()
+            for w in line.split():
+                if len(w) > 2 and w not in {"ART", "OON", "ARREA", "OONAH"}:
+                    valid_words.append(w)
+        cand = " ".join(valid_words)
+        if len(cand) > 5 and _valid_name(cand):
+            father_candidates.append(cand.title())
+    
+    if father_candidates:
+        out["given_names"] = max(father_candidates, key=len)
 
-    name = re.search(
-        r"(?:NAME|नाम)(?!.*FATHER)[:\s/]*\n?\s*([A-Z][A-Z\s]{2,40}?)(?:\n|FATHER|DATE|PAN|$)",
-        upper,
-    )
-    if name:
-        cand = re.sub(r"\s+", " ", name.group(1)).strip()
-        if _valid_name(cand):
-            out["name"] = cand.title()
+    # Find all "NAME" blocks that don't contain "FATHER"
+    name_matches = re.finditer(r"(?:^|\n)(?!.*FATHE?R?).*?(?:NAME|नाम)[^\n]*\n([\s\S]*?)(?=\n.*?(?:FATHE?R?|पिता|DATE|BIRTH|जन्म|PAN|INCOME|GOVT|\d{2}[/-]\d{2}[/-]\d{4}|$))", upper)
+    name_candidates = []
+    for nm in name_matches:
+        valid_words = []
+        for line in nm.group(1).splitlines():
+            line = re.sub(r"[^A-Z\s]", "", line).strip()
+            for w in line.split():
+                if len(w) > 2 and w not in {"ART", "OON", "ARREA", "OONAH"}:
+                    valid_words.append(w)
+        cand = " ".join(valid_words)
+        if len(cand) > 5 and _valid_name(cand):
+            name_candidates.append(cand.title())
+            
+    if name_candidates:
+        out["name"] = max(name_candidates, key=len)
 
     if not out["name"]:
         for line in upper.splitlines():
@@ -150,10 +168,15 @@ def extract_pan_fields(
     confidences: list[float] = []
 
     for key, crop in regions.items():
-        if crop.size == 0:
+        if crop.size == 0 or key == "photo":
             continue
         gray = _enhance_region(crop)
-        psm = 7 if key == "number_strip" else 6
+        if key == "number_strip":
+            psm = 7
+        elif key in ("full", "full_no_qr"):
+            psm = 3
+        else:
+            psm = 6
         text = _ocr_region(gray, settings, psm=psm)
         texts[key] = text
         if _HAS_TESS and text.strip():
@@ -174,7 +197,9 @@ def extract_pan_fields(
             except Exception:
                 pass
 
-    combined = "\n".join(texts.values()) + "\n" + fallback_text
+    combined = "\n".join(texts.values())
+    if not combined.strip():
+        combined = fallback_text
     if is_dashboard_screenshot_text(combined):
         raise ValueError("uploaded_image_looks_like_app_screenshot")
 
@@ -195,7 +220,7 @@ def extract_pan_fields(
 
     fields = ExtractedFields(
         name=name,
-        given_names=parsed.get("father_name"),
+        given_names=parsed.get("given_names"),
         date_of_birth=parsed.get("date_of_birth"),
         document_id=pan,
         nationality="IND",

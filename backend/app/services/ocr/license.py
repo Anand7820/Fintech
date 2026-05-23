@@ -99,16 +99,16 @@ def _parse_license_fields(text: str) -> dict[str, str | None]:
         out["date_of_birth"] = dob.group(1).strip()
 
     exp = re.search(
-        r"(?:EXP|EXPIR(?:ES|Y)|VALID)[:\s]*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})",
+        r"(?:EXP|EXPIR(?:ES|Y)|VALID(?:ITY)?(?:\(NT\))?)[\s:]*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})",
         upper,
     )
     if exp:
         out["expiry"] = exp.group(1).strip()
 
     for pattern in (
-        r"(?:^|\n)\s*([A-Z][A-Z]+(?:\s+[A-Z][A-Z]+){1,3})\s*\n",
-        r"NAME[:\s]+([A-Z][A-Z\s\-']{4,40})",
-        r"LN[:\s]+([A-Z][A-Z\s\-']{2,30})",
+        r"NAME[:\s]+([A-Z][A-Z \-']{4,40})",
+        r"LN[:\s]+([A-Z][A-Z \-']{2,30})",
+        r"(?:^|\n)\s*([A-Z][A-Z]+(?: [A-Z][A-Z]+){1,3})\s*\n",
     ):
         match = re.search(pattern, upper)
         if match:
