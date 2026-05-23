@@ -35,7 +35,7 @@ export const MOCK_DOCUMENTS: Record<string, KYCDocument> = {
       { key: 'expiry_date', label: 'Date of Expiry', value: '18 FEB 2032', confidence: 99.2, isMatch: true },
     ],
     safetyIndicators: [
-      { id: 'ind-1', name: 'Face Match Biometrics', status: 'PASSED', details: '98.4% match confidence between document portrait and selfie.', score: 98.4 },
+
       { id: 'ind-2', name: 'MRZ Validation', status: 'PASSED', details: 'Checksum digits match OCR extracted fields.', score: 100 },
       { id: 'ind-3', name: 'Hologram & Optical Security', status: 'PASSED', details: 'Guilloche pattern and microprinting lines verified.' },
       { id: 'ind-4', name: 'Substrate & Paper Quality', status: 'PASSED', details: 'IR/UV reflectance falls within standard parameters.' },
@@ -66,7 +66,7 @@ export const MOCK_DOCUMENTS: Record<string, KYCDocument> = {
       { key: 'expiry_date', label: 'Date of Expiry', value: '26 APR 2028', confidence: 99.0, isMatch: true },
     ],
     safetyIndicators: [
-      { id: 'ind-5', name: 'Face Match Biometrics', status: 'PASSED', details: '91.2% match confidence between document photo and live selfie.', score: 91.2 },
+
       { id: 'ind-6', name: 'Font Tamper Check', status: 'SUSPECTED TAMPERING', details: 'Discrepancy detected in font sizing and character alignment in the Date of Birth field.', score: 45 },
       { id: 'ind-7', name: 'Holographic Overlay', status: 'PASSED', details: 'California Bear outline and DMV text verified.' },
       { id: 'ind-8', name: 'Cross-Database Validation', status: 'FAILED', details: 'Date of birth does not match CA DMV records for license DL88210344.' },
@@ -151,8 +151,7 @@ export const SIMULATION_LOGS: Record<string, Omit<ProcessingLog, 'timestamp'>[]>
     { id: 'log-4', stage: 'alignment', message: 'Bounding box alignment matched US Passport Spec V3.4.', level: 'success' },
     { id: 'log-5', stage: 'forgery', message: 'Running forgery check: Analysis of Guilloche grid patterns, micro-text lines, and ink bleed vectors...', level: 'info' },
     { id: 'log-6', stage: 'forgery', message: 'Security patterns verified. Hologram light diffraction checks passed. No digital editing traces detected.', level: 'success' },
-    { id: 'log-7', stage: 'biometrics', message: 'Biometrics queue: Extracting photo ID. Comparing passport photo with applicant live selfie (3D face map)...', level: 'info' },
-    { id: 'log-8', stage: 'biometrics', message: 'Face matching complete: 98.4% match score (Threshold: >80.0%). Matches user ID record.', level: 'success' },
+
     { id: 'log-9', stage: 'final', message: 'KYC Document Verification PASSED. Auto-routing to active customer directory.', level: 'success' }
   ],
   license: [
@@ -162,8 +161,7 @@ export const SIMULATION_LOGS: Record<string, Omit<ProcessingLog, 'timestamp'>[]>
     { id: 'log-4', stage: 'alignment', message: 'Bounding box alignment complete (California DL 2020 layout). State headings matched.', level: 'success' },
     { id: 'log-5', stage: 'forgery', message: 'Running forgery check: Scan for font size deviations and character spacing variations...', level: 'info' },
     { id: 'log-6', stage: 'forgery', message: 'ALERT: Font inconsistency detected in field [Date of Birth] (confidence score: 45%). Character height mismatch of 0.8px suggests text modification.', level: 'error' },
-    { id: 'log-7', stage: 'biometrics', message: 'Biometrics: Face matching live selfie to DL portrait...', level: 'info' },
-    { id: 'log-8', stage: 'biometrics', message: 'Face match completed successfully: 91.2% confidence score.', level: 'success' },
+
     { id: 'log-9', stage: 'final', message: 'VERDICT: WARNING (SUSPECTED TAMPERING). Routing document to manual QA review queue.', level: 'warning' }
   ],
   utility_bill: [
@@ -173,9 +171,9 @@ export const SIMULATION_LOGS: Record<string, Omit<ProcessingLog, 'timestamp'>[]>
     { id: 'log-4', stage: 'alignment', message: 'Document classified as Consolidated Edison utility statement.', level: 'info' },
     { id: 'log-5', stage: 'forgery', message: 'Running metadata analysis and signature validation...', level: 'info' },
     { id: 'log-6', stage: 'forgery', message: 'Metadata checks completed: PDF was created by ConEd billing engine directly. Digital integrity verified.', level: 'success' },
-    { id: 'log-7', stage: 'biometrics', message: 'Validation checks: Verifying address and document issue dates...', level: 'info' },
-    { id: 'log-8', stage: 'biometrics', message: 'ALERT: Document date (12 JAN 2025) is older than 90 days. Current date: 22 MAY 2026. Document expired.', level: 'error' },
-    { id: 'log-9', stage: 'biometrics', message: 'ALERT: Extracted address "789 E 10TH ST" does not match registration address "123 Main St".', level: 'error' },
+    { id: 'log-7', stage: 'forgery', message: 'Validation checks: Verifying address and document issue dates...', level: 'info' },
+    { id: 'log-8', stage: 'forgery', message: 'ALERT: Document date (12 JAN 2025) is older than 90 days. Current date: 22 MAY 2026. Document expired.', level: 'error' },
+    { id: 'log-9', stage: 'forgery', message: 'ALERT: Extracted address "789 E 10TH ST" does not match registration address "123 Main St".', level: 'error' },
     { id: 'log-10', stage: 'final', message: 'VERDICT: FAILED. Reason: Expired document and Address mismatch. User notified to re-upload.', level: 'error' }
   ]
 };

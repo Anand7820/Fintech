@@ -62,15 +62,7 @@ export const LogsTimeline: React.FC<LogsTimelineProps> = ({
       return 'running';
     }
 
-    if (stageName === 'biometrics') {
-      const forgeryComplete = logs.some(l => l.stage === 'forgery');
-      if (!forgeryComplete) return 'idle';
-      if (status === 'processing' && stageLogs.length === 0) return 'running';
-      if (hasError) return 'failed';
-      if (hasWarning) return 'warning';
-      if (hasSuccess || isFinalStatus) return 'success';
-      return 'running';
-    }
+
 
     if (stageName === 'final') {
       if (!isFinalStatus) return 'idle';
@@ -153,7 +145,7 @@ export const LogsTimeline: React.FC<LogsTimelineProps> = ({
           {getStageIndicator('received', 'Document Ingestion')}
           {getStageIndicator('ocr', 'OCR Text Extraction')}
           {getStageIndicator('forgery', 'Anti-Forgery & Tamper Audit')}
-          {getStageIndicator('biometrics', 'Biometric Verification')}
+
           {getStageIndicator('final', 'Final Decision Verdict')}
         </div>
       </div>

@@ -125,7 +125,7 @@ export default function Home() {
           <div>
             <h2 className="text-2xl font-extrabold text-white tracking-tight">KYC Verification Hub</h2>
             <p className="text-xs text-slate-400 mt-1">
-              Analyze OCR confidence intervals, biometric alignments, and document anti-forgery parameters.
+              Analyze OCR confidence intervals and document anti-forgery parameters.
             </p>
           </div>
           <div className="flex items-center space-x-2">

@@ -81,8 +81,8 @@ def is_plausible_person_name(name: str | None) -> bool:
         return False
     if any(len(t) <= 2 for t in tokens):
         return False
-    # Names should be mostly alphabetic words >= 3 chars
-    long_tokens = [t for t in tokens if len(t) >= 3 and t.isalpha()]
+    # Names should be mostly alphabetic (or alphanumeric if OCR typo) words >= 3 chars
+    long_tokens = [t for t in tokens if len(t) >= 3 and t.isalnum()]
     return len(long_tokens) >= 2
 
 

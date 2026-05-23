@@ -284,7 +284,7 @@ export function useKYCWorkflow() {
         { id: 'log-api-1', stage: 'received', message: `File ingested. Verification ID: ${result.verification_id}`, timestamp: formatLogTimestamp(), level: 'success' },
         { id: 'log-api-2', stage: 'ocr', message: `OCR confidence: ${ocrConfidence.toFixed(1)}%. Raw: ${result.ocr.raw_text_snippet.slice(0, 120)}...`, timestamp: formatLogTimestamp(), level: ocrConfidence >= 70 ? 'success' : 'warning' },
         { id: 'log-api-3', stage: 'forgery', message: `Forgery score: ${(forgeryScore * 100).toFixed(1)}%. Structural integrity: ${structuralOk ? 'PASS' : 'FAIL'}`, timestamp: formatLogTimestamp(), level: result.forgery.is_suspected_fake ? 'error' : 'success' },
-        { id: 'log-api-4', stage: 'biometrics', message: identityMessage, timestamp: formatLogTimestamp(), level: 'info' },
+
         { id: 'log-api-5', stage: 'final', message: isAadhaar ? `Aadhaar verdict: ${result.status.toUpperCase()}. UID checksum: ${result.aadhaar_checksum_valid ? 'VALID' : 'UNCONFIRMED'}.` : `API verdict: ${result.status.toUpperCase()} (${result.processing_time_ms}ms)`, timestamp: formatLogTimestamp(), level: finalStatus === 'success' ? 'success' : finalStatus === 'warning' ? 'warning' : 'error' },
       ];
 

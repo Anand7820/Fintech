@@ -447,39 +447,6 @@ export const SplitScreenWorkflow: React.FC<SplitScreenWorkflowProps> = ({ docume
             ) : (
               <div className="space-y-4">
                 
-                {/* Face Biometrics Widget */}
-                {document.type !== 'utility_bill' && (
-                  <div className="p-4 rounded-xl bg-slate-900/30 border border-violet-900/40 flex items-center justify-between">
-                    <div className="flex items-center space-x-3.5">
-                      <div className="relative">
-                        <div className="w-11 h-11 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden">
-                          {document.type === 'passport' ? (
-                            <svg className="w-9 h-9 text-slate-400" fill="currentColor" viewBox="0 0 24 24">
-                              <circle cx="12" cy="8" r="4" /><path d="M12 14c-6.1 0-8 4-8 4v2h16v-2s-1.9-4-8-4z" />
-                            </svg>
-                          ) : (
-                            <svg className="w-9 h-9 text-slate-400" fill="currentColor" viewBox="0 0 24 24">
-                              <circle cx="12" cy="8" r="4" /><path d="M12 14c-6.1 0-8 4-8 4v2h16v-2s-1.9-4-8-4z" />
-                            </svg>
-                          )}
-                        </div>
-                        <div className="absolute -bottom-1 -right-1 p-1 bg-emerald-500 rounded-full text-slate-950">
-                          <UserCheck className="w-3 h-3" />
-                        </div>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Applicant Face Match</span>
-                        <span className="text-xs text-slate-500 block mt-0.5">Checked with Live Selfie</span>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-lg font-bold text-white block">
-                        {document.type === 'passport' ? '98.4%' : '91.2%'}
-                      </span>
-                      <span className="text-[9px] text-emerald-400 font-bold block">MATCH CONFIRMED</span>
-                    </div>
-                  </div>
-                )}
 
                 {/* Grid list of indicators */}
                 <div className="space-y-3">

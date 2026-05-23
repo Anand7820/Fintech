@@ -106,8 +106,8 @@ def _parse_license_fields(text: str) -> dict[str, str | None]:
         out["expiry"] = exp.group(1).strip()
 
     for pattern in (
-        r"NAME[:\s]+([A-Z][A-Z \-']{4,40})",
-        r"LN[:\s]+([A-Z][A-Z \-']{2,30})",
+        r"(?:NAME|NAM|NANE)[:\s]+([A-Z0-9][A-Z0-9 \-']{4,40})",
+        r"LN[:\s]+([A-Z0-9][A-Z0-9 \-']{2,30})",
         r"(?:^|\n)\s*([A-Z][A-Z]+(?: [A-Z][A-Z]+){1,3})\s*\n",
     ):
         match = re.search(pattern, upper)

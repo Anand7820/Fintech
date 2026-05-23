@@ -193,7 +193,6 @@ export function useDocumentParser() {
         label: 'State / Region',
         value: state,
         confidence,
-        isMatch: nameOk,
       });
     }
     fields.push({ key: 'doc_type', label: 'Document Type', value: "DRIVER'S LICENSE", confidence: 99 });
